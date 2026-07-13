@@ -1,0 +1,3 @@
+display_name: HRagent OCEAN MVPI Emotion
+short_description: Implement HRagent-05 OCEAN sliders, MVPI motivation, emotion transition, and report rules.
+default_prompt: Use the HRagent OCEAN MVPI Emotion skill to implement or review the requested HRagent-05 feature while preserving existing workflow compatibility.

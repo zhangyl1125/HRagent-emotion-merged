@@ -1,0 +1,31 @@
+version: v0.1
+name: rehearsal_difficulty
+levels:
+  - id: low
+    name: 低压
+    description: 员工会表达顾虑，但愿意配合澄清事实。
+    user_turn_budget: 12
+    response_style:
+      length: short
+      challenge_level: mild
+      emotion_intensity: low
+  - id: medium
+    name: 中压
+    description: 员工会持续追问依据、资源、公平性或后续影响。
+    user_turn_budget: 12
+    response_style:
+      length: medium
+      challenge_level: moderate
+      emotion_intensity: medium
+  - id: high
+    name: 高压
+    description: 员工会多轮防御、反驳、沉默或谈判，但仍保持企业场景真实边界。
+    user_turn_budget: 12
+    response_style:
+      length: medium
+      challenge_level: strong
+      emotion_intensity: high
+default_difficulty: medium
+boundaries:
+  - 高压难度不得出现辱骂、人身攻击、歧视表达或明显戏剧化内容。
+  - 难度只影响员工回应强度，不允许 Employee Agent 引用政策或替 HR 下结论。

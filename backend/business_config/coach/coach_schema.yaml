@@ -1,0 +1,78 @@
+version: v0.1
+name: coach_subtask_output_schemas
+purpose: 定义 Coach 子任务给 LLM prompt 使用的结构化输出说明，仅面向 rubric / emotion / performance / redline 子任务。
+shared_types:
+  EvidenceRef:
+    fields:
+      turn_index: int
+      speaker: manager|employee|system
+      quote: string
+      note: string
+  Citation:
+    fields:
+      source_id: string
+      title: string
+      scope: policy|methodology|general|unknown
+      quote: string|null
+  BetterPhrase:
+    fields:
+      original: string|null
+      suggestion: string
+      reason: string
+  RiskItem:
+    fields:
+      rule_id: string|null
+      severity: critical|high|medium|low
+      category: string
+      matched_text: string|null
+      explanation: string
+      safer_phrase: string|null
+schemas:
+  RubricEvaluationResult:
+    fields:
+      task_id: string
+      status: success|insufficient_information|failed
+      score: int|null
+      summary: string
+      dimension_scores: list
+      evidence: list[EvidenceRef]
+      strengths: list[string]
+      improvement_points: list[string]
+      better_phrases: list[BetterPhrase]
+      risks: list[RiskItem]
+  EmotionEvaluationResult:
+    fields:
+      task_id: string
+      status: success|insufficient_information|failed
+      score: int|null
+      summary: string
+      dimension_scores: list
+      evidence: list[EvidenceRef]
+      better_phrases: list[BetterPhrase]
+      risks: list[RiskItem]
+  PerformanceEvaluationResult:
+    fields:
+      task_id: string
+      status: success|insufficient_information|failed
+      score: int|null
+      summary: string
+      dimension_scores: list
+      evidence: list[EvidenceRef]
+      missing_elements: list[string]
+      action_plan_quality: string
+      better_phrases: list[BetterPhrase]
+      citations: list[Citation]
+  RedlineCheckResult:
+    fields:
+      task_id: string
+      status: success|insufficient_information|failed
+      has_critical_risk: bool
+      risk_count: int
+      risks: list[RiskItem]
+      evidence: list[EvidenceRef]
+      better_phrases: list[BetterPhrase]
+strict_output_rules:
+  - 只输出约定字段，不输出多余解释。
+  - Manager 表现判断必须引用 conversation_history 中的 manager 原话或轮次。
+  - matched_text 必须来自 manager 原话。
+  - 不能输出法律结论，只能输出话术风险提示。

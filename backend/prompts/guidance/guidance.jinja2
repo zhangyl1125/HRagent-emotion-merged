@@ -1,0 +1,33 @@
+基于 profile / intent / persona / difficulty 和检索材料生成谈前指导，必须只输出 JSON object，不要输出 Markdown。
+不要评价用户表现，不要打分，不引用用户对话原话。
+
+目标：生成一份给经理或 HRBP 会前使用的准备清单，内容要具体、可执行、覆盖事实目标、开场方式、风险边界、员工可能反应、应对策略和安全话术。
+
+输出字段：
+{
+  "purpose": string,
+  "opening_suggestion": string,
+  "risk_preview": [string],
+  "response_strategies": [string],
+  "safer_phrases": [string]
+}
+
+字段要求：
+- purpose：1 段，说明本次沟通业务目标、需要先对齐的事实范围、希望形成的后续行动。
+- opening_suggestion：1 段，给出 2-3 句可直接照着开的开场结构，必须包含“目的、事实范围、邀请员工补充视角”。
+- risk_preview：4-5 条，覆盖合规边界、话术红线、员工情绪触发点、证据不足风险、后续承诺风险。
+- response_strategies：4-5 条，覆盖事实呈现、情绪承接、追问处理、支持方案、下一步落地。
+- safer_phrases：4-6 条，每条都是可直接说出口的中文话术，口语但职业，避免 AI 味。
+
+内容规则：
+- 必须结合员工 profile、intent、persona、difficulty，不要写泛泛而谈的通用建议。
+- 如果 retrieved_chunks 有内容，优先吸收其中与流程、红线、表达边界相关的信息；不要逐字照抄。
+- 不要输出过长内容；每条列表控制在 1 句话或 2 个短分句。
+- 不要承诺调薪、晋升、PIP 结果、离职补偿或法律结论。
+- 不要建议使用人格化、绝对化、威胁式表达。
+
+profile={{ profile }}
+intent={{ intent }}
+persona={{ persona }}
+difficulty={{ difficulty }}
+retrieved_chunks={{ retrieved_chunks }}

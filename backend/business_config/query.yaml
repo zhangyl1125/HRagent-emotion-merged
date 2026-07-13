@@ -1,0 +1,78 @@
+version: v0.2
+name: rag_retrieval_queries
+retrieval_policy:
+  entry_service: RetrievalService
+  agent_direct_vectorstore_access: forbidden
+  employee_agent_kb_access: forbidden
+
+defaults:
+  vector_top_k: 20
+  rerank_enabled: true
+  rerank_top_n: 5
+  metadata_filter: {}
+  scopes:
+    - general
+    - policy
+    - performance
+    - emotion
+    - examples
+
+queries:
+  guidance:
+    enabled: true
+    vector_top_k: 20
+    rerank_enabled: true
+    rerank_top_n: 5
+    scopes: [general, policy, performance, emotion, examples]
+    query_templates:
+      - "{{ intent.name }} 绩效谈话 指导 风险 应对策略"
+      - "{{ persona.name if persona else '' }} 员工反应 情绪承接 话术"
+
+  rubric_evaluation:
+    enabled: true
+    vector_top_k: 20
+    rerank_enabled: true
+    rerank_top_n: 5
+    scopes: [general, policy, performance, examples]
+    query_templates:
+      - "{{ intent.name }} 绩效反馈 评价标准 事实证据 期望设定"
+      - "绩效反馈 开场框定 倾听回应 收尾承诺"
+
+  emotion_evaluation:
+    enabled: true
+    vector_top_k: 20
+    rerank_enabled: true
+    rerank_top_n: 5
+    scopes: [general, emotion, examples]
+    query_templates:
+      - "绩效反馈 情绪承接 员工防御 沉默 回避 应对"
+      - "困难对话 倾听 共情 回应策略"
+
+  performance_evaluation:
+    enabled: true
+    vector_top_k: 20
+    rerank_enabled: true
+    rerank_top_n: 5
+    scopes: [general, performance, policy, examples]
+    query_templates:
+      - "绩效反馈 目标 结果 事实证据 改进计划 支持资源"
+      - "{{ intent.name }} 绩效差距 行动计划 时间节点"
+
+  redline_check:
+    enabled: true
+    vector_top_k: 30
+    rerank_enabled: true
+    rerank_top_n: 8
+    scopes: [general, policy]
+    query_templates:
+      - "{{ intent.name }} 红线表达 合规风险 歧视 无证据定性 越权承诺"
+      - "病假 孕产 工伤 争议 终止雇佣 风险话术"
+
+  report_generator:
+    enabled: true
+    vector_top_k: 10
+    rerank_enabled: true
+    rerank_top_n: 5
+    scopes: [general, performance, emotion, examples]
+    query_templates:
+      - "绩效反馈 复盘 建议话术 改进建议"

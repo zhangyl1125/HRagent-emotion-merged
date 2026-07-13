@@ -1,0 +1,107 @@
+version: v0.6
+name: emotion_evaluation
+purpose: 评估多轮预演中 Manager 是否先承接员工情绪、降低防御，再推进事实、期望和改进计划；仅用于 Coach 复盘评估。
+core_principles:
+- id: emotion_before_business
+  rule: 员工出现焦虑、委屈、防御、沉默或反驳时，先承接情绪，再进入事实与行动。
+- id: empathy_without_concession
+  rule: 理解员工感受不等于改变绩效结论，不用安抚换取不当承诺。
+- id: no_psychological_diagnosis
+  rule: 不得给员工做心理诊断或人格标签，只描述当下表达和工作相关影响。
+- id: respectful_control
+  rule: 用开放问题和总结确认引导表达，避免压制、争辩或连续追问“为什么”。
+techniques:
+- id: mirroring
+  name: 镜像复述
+  use: 复述员工关键词或短句，鼓励继续表达。
+  avoid: 机械重复后立刻反驳。
+- id: labeling
+  name: 情绪标注
+  use: 用“听起来/看起来你可能……”标注担心、委屈、压力、不确定等感受。
+  avoid: 说员工“情绪化”“玻璃心”或给心理标签。
+- id: acknowledgement
+  name: 共情接纳
+  use: 承认处境和感受，同时区分“理解感受”与“确认结果”。
+  avoid: 为了安抚而承诺评级、晋升、调薪、PIP 或流程结果。
+- id: calibrated_question
+  name: 校准提问
+  use: 用“什么/如何/哪些”询问阻碍、支持和下一步。
+  avoid: 高压追问“为什么你没做到”。
+- id: summary_confirmation
+  name: 总结确认
+  use: 进入事实讨论前，概括员工关切并确认理解是否准确。
+  avoid: 只总结对 Manager 有利的信息。
+dimensions:
+- id: emotion_detection
+  name: 情绪识别
+  weight: 20
+  excellent: 能识别显性和隐性情绪，并指出触发点。
+  qualified: 识别到明显情绪，但触发点不清。
+  weak: 只回应表层内容。
+  risk: 把情绪反应定性为态度问题。
+- id: listening_space
+  name: 表达空间
+  weight: 15
+  excellent: 少打断，允许员工解释和补充。
+  qualified: 有表达空间但较短。
+  weak: 形式上提问但很快打断。
+  risk: 压制、否定或拒绝听解释。
+- id: labeling_quality
+  name: 情绪标注质量
+  weight: 20
+  excellent: 用中性语言准确标注，并允许员工修正。
+  qualified: 有“我理解”等基本承接。
+  weak: 承接空泛。
+  risk: 诊断化、讽刺式或人格化标注。
+- id: empathy_boundary
+  name: 共情与边界
+  weight: 20
+  excellent: 理解感受，同时坚持事实、标准和流程边界。
+  qualified: 共情和事实都有，但衔接不稳。
+  weak: 只共情不回到行动，或只讲事实不承接。
+  risk: 虚假安慰、越权承诺或淡化差距。
+- id: question_quality
+  name: 提问质量
+  weight: 15
+  excellent: 开放问题能推动员工说明阻碍、需求和可行动作。
+  qualified: 问题基本开放但推进有限。
+  weak: 问题笼统。
+  risk: 连续质问、诱导承认错误。
+- id: transition_timing
+  name: 过渡时机
+  weight: 10
+  excellent: 情绪被接住后自然过渡到事实和行动。
+  qualified: 过渡略快但员工仍能跟上。
+  weak: 过渡生硬或过早。
+  risk: 员工明显防御时直接推进结论。
+critical_failures:
+- id: skipping_emotion
+  condition: 员工明显情绪化或防御时直接批评/下结论
+  severity: high
+- id: personal_labeling
+  condition: 使用“情绪化、玻璃心、态度差”等人格化标签
+  severity: high
+- id: false_reassurance
+  condition: 为安抚而承诺评级、晋升、调薪、PIP 或流程结果
+  severity: critical
+- id: privacy_probe
+  condition: 无必要追问病假、家庭、健康等敏感细节
+  severity: critical
+output_contract:
+  schema: EmotionEvaluationResult
+  task_id: emotion_evaluation
+  task_name: 情绪承接评估
+  score_policy: success 时输出 0-100；insufficient_information 时 score=null 并说明缺口。
+  task_specific_fields:
+    dimension_scores: 必须覆盖 dimensions 中所有维度。
+    better_phrases: 至少包含 1 条情绪标注或校准提问改写。
+execution:
+  stage: post_rehearsal_coach
+  trigger: 用户结束多轮预演或达到最大用户回合后，由 coach_service 调用 coach_orchestrator 执行。
+  required_inputs:
+  - confirmed_employee_profile
+  - intent_config
+  - persona_config
+  - difficulty_config
+  - conversation_history
+  evidence_policy: 所有关于 Manager 表现的判断必须引用 conversation_history 中的 manager 原话或轮次。

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="8" viewBox="0 0 1360 8" preserveAspectRatio="none" role="img" aria-labelledby="title desc">
+  <title id="title">Bosch-style supergraphic strip</title>
+  <desc id="desc">CSS/SVG supergraphic-style color strip for UI decoration. Verify colors and proportions against official Bosch Brand Guide before production use.</desc>
+  <rect x="0" y="0" width="245" height="8" fill="#E20015"/>
+  <rect x="245" y="0" width="190" height="8" fill="#B90276"/>
+  <rect x="435" y="0" width="220" height="8" fill="#50237F"/>
+  <rect x="655" y="0" width="245" height="8" fill="#007BC0"/>
+  <rect x="900" y="0" width="230" height="8" fill="#00A8B0"/>
+  <rect x="1130" y="0" width="230" height="8" fill="#00884A"/>
+</svg>

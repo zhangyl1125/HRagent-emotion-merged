@@ -1,0 +1,47 @@
+version: v0.2
+name: coach_tasks
+execution_stage: post_rehearsal_coach
+mode_policy:
+  rehearsal_report:
+    run_tasks:
+      - rubric_evaluation
+      - emotion_evaluation
+      - performance_evaluation
+      - redline_check
+  pre_talk_guidance:
+    run_tasks: []
+    note: 谈前指导由 guidance_service 单独生成，不调用 coach_orchestrator，不评分。
+tasks:
+  - id: rubric_evaluation
+    module: rubric_evaluator
+    config_file: rubric.yaml
+    prompt_template: coach/rubric.jinja2
+    output_schema: RubricEvaluationResult
+    requires_retrieval: true
+  - id: emotion_evaluation
+    module: emotion_evaluator
+    config_file: emotion.yaml
+    prompt_template: coach/emotion.jinja2
+    output_schema: EmotionEvaluationResult
+    requires_retrieval: true
+  - id: performance_evaluation
+    module: performance_evaluator
+    config_file: performance.yaml
+    prompt_template: coach/performance.jinja2
+    output_schema: PerformanceEvaluationResult
+    requires_retrieval: true
+  - id: redline_check
+    module: redline_evaluator
+    config_file: redline.yaml
+    prompt_template: coach/redline.jinja2
+    output_schema: RedlineCheckResult
+    requires_retrieval: true
+aggregation:
+  generator: report_generator.py
+  prompt_template: coach/report.jinja2
+  model_task_name: coach_report
+  priority_order:
+    - redline_check
+    - rubric_evaluation
+    - performance_evaluation
+    - emotion_evaluation

@@ -1,0 +1,74 @@
+version: v0.2
+name: conversation_intents
+supported_intents:
+  - id: development
+    name: 发展型反馈
+    business_goal: 认可现有绩效与潜力，规划长期成长路径，激励员工承担更大职责，实现个人与组织双赢。
+    red_lines:
+      - 不承诺未审批的晋升、调薪或转岗。
+      - 不把发展讨论等同于正式任命。
+      - 不能回避员工可能存在的局部短板（如有，需结合发展+改进型）。
+    expected_outcome: 员工明确自身优势、成长机会及后续发展资源，对职业路径有正向期待。
+    employee_agent_hint: 员工可能关注晋升时间表、薪酬调整空间、具体培养资源和下一个岗位机会。
+    coach_focus:
+      - 优势肯定具体化
+      - 发展路径清晰度
+      - 资源与支持落地
+      - 期望管理（不越权承诺）
+  - id: improvement
+    name: 改进型反馈
+    business_goal: 客观指出绩效差距，明确可量化的改善标准与期限，配套辅导推动绩效回归合格线。
+    red_lines:
+      - 不进行人身攻击或主观定性。
+      - 不替代正式PIP文书，但可为后续PIP做铺垫。
+      - 不承诺无法兑现的资源或豁免。
+    expected_outcome: 员工认知差距，接受限期改进计划，或提出合理异议后调整方案。
+    employee_agent_hint: 员工可能质疑标准公平性、资源支持、时间压迫，或担心后续PIP/淘汰后果。
+    coach_focus:
+      - 差距客观陈述
+      - 改善计划可执行性
+      - 支持与辅导资源
+      - 时间节点与检查点
+  - id: exit
+    name: 退出型沟通
+    business_goal: 在HR/Legal框架下，基于完整绩效记录告知岗位不匹配，启动合规退出流程，平稳收尾。
+    red_lines:
+      - 不自行宣布解除、赔偿或签字结论（需HR/Legal确认）。
+      - 不威胁、不逼迫、不诱导员工主动辞职。
+      - 遇到争议或敏感情形立即升级HR/Legal。
+    expected_outcome: 员工了解当前状况、正式流程及后续安排，情绪虽可能负面但沟通合法合规。
+    employee_agent_hint: 员工极度关注补偿方案、离职原因记录、申诉渠道、最后工作日和交接安排。
+    coach_focus:
+      - 事实举证充分
+      - 流程告知清晰
+      - 措辞风险控制
+      - 升级提示（HR/Legal）
+  - id: development_improvement
+    name: 发展+改进混合反馈
+    business_goal: 在充分肯定整体绩效和发展潜力的前提下，指出局部短板并制定轻量化改进方案，不设淘汰预警。
+    red_lines:
+      - 不能因为局部短板否定全局发展通道。
+      - 改进方案不得变相降低已有认可或发展资源。
+      - 不承诺未审批的发展资源（如晋升、调薪）。
+    expected_outcome: 员工接受局部调整要求，同时保持积极发展预期，愿意配合双向提升计划。
+    employee_agent_hint: 员工可能担心短板影响晋升机会，或追问发展资源是否因改进而缩水。
+    coach_focus:
+      - 先扬后抑结构
+      - 局部短板具体化
+      - 轻量改进计划
+      - 平衡发展承诺与整改期限
+  - id: improvement_exit
+    name: 改进+退出预警反馈
+    business_goal: 作为最后窗口期，复盘过往辅导与差距，设定硬性量化目标，明确告知未达标将启动退出流程。
+    red_lines:
+      - 不模糊化退出后果，必须清晰告知。
+      - 不在无HR支持时擅自承诺缓冲期或调整岗位。
+      - 不得缺失书面绩效记录和举证材料。
+    expected_outcome: 员工意识到严重性，全力冲刺改进或开始接受退出可能，为后续流程留据。
+    employee_agent_hint: 员工可能请求更长时间、换岗机会、强调外部因素，或情绪抵触。
+    coach_focus:
+      - 历史复盘客观性
+      - 最后一次改进的硬性标准
+      - 后果清晰无歧义
+      - 保留完整证据链
+default_intent: improvement  # 如无特别设定，默认采用基础改进型

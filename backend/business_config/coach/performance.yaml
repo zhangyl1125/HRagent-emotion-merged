@@ -1,0 +1,150 @@
+version: v0.6
+name: performance_feedback_quality
+purpose: 评估多轮预演中 Manager 是否围绕目标、事实、路径、问题类型、改进动作和跟进节点进行有效绩效反馈；仅用于 Coach 复盘评估。
+core_rule: 反馈必须落到目标、结果、具体行为、影响、问题类型和下一步；禁止用态度、感觉、人格判断替代事实。
+feedback_model:
+- id: goal
+  name: 目标
+  question: 本周期目标/岗位标准是什么？
+  check: 是否先对齐标准，而不是直接评价人。
+- id: result
+  name: 结果
+  question: 实际结果是什么？差距或亮点是什么？
+  check: 是否有数据、项目、时间和影响。
+- id: path
+  name: 路径
+  question: 哪些关键动作有效、无效或缺失？
+  check: 是否讨论行为和过程，而不是贴标签。
+- id: diagnosis
+  name: 判断
+  question: 问题属于能力、判断、投入、协作、资源还是流程？
+  check: 是否有证据，避免模糊归因。
+- id: next_action
+  name: 下一步
+  question: 下周期改什么？怎么验证？何时检查？谁支持？
+  check: 是否形成可执行计划。
+sequence:
+- step: 1
+  id: frame_context
+  name: 说明背景与目的
+  must_have:
+  - 考核周期
+  - 谈话主题
+  - 讨论方式
+  avoid:
+  - 直接通知结果
+  - 剥夺表达权
+- step: 2
+  id: align_goal_result
+  name: 目标与结果对齐
+  must_have:
+  - 目标
+  - 实际结果
+  - 差距/偏差
+  - 影响
+  avoid:
+  - 评价人
+  - 模糊感觉
+- step: 3
+  id: review_path
+  name: 关键路径复盘
+  must_have:
+  - 有效动作
+  - 无效动作
+  - 缺失动作
+  - 具体例子
+  avoid:
+  - 只说态度/主动性
+- step: 4
+  id: diagnose_problem
+  name: 问题类型判断
+  must_have:
+  - 问题类型
+  - 判断依据
+  - 员工视角
+  avoid:
+  - 不够用心、状态不好等模糊归因
+- step: 5
+  id: define_action
+  name: 下一步行动
+  must_have:
+  - 重点改进项
+  - 行动
+  - 验证标准
+  - 检查节点
+  - 支持资源
+  avoid:
+  - 泛泛鼓励
+  - 只让员工自己改
+- step: 6
+  id: close_followup
+  name: 闭环确认
+  must_have:
+  - 共识/分歧
+  - 责任人
+  - 下次跟进时间
+  avoid:
+  - 无确认结束
+  - 威胁式收尾
+dimensions:
+- id: context_framing
+  name: 背景目的清晰度
+  weight: 15
+  excellent: 清晰说明周期、目的和讨论方式。
+  risk: 直接宣布结果，员工没有理解和表达空间。
+- id: result_alignment
+  name: 目标与结果清晰度
+  weight: 20
+  excellent: 目标、实际结果、差距和影响均清楚。
+  risk: 没有结果依据或只谈主观感受。
+- id: behavior_path_review
+  name: 行为路径复盘
+  weight: 20
+  excellent: 能区分有效动作、无效动作和缺失动作。
+  risk: 把问题直接归因到人格或态度。
+- id: problem_diagnosis
+  name: 问题诊断
+  weight: 15
+  excellent: 明确问题类型并给出证据，同时听取员工视角。
+  risk: 使用“态度一般、不够努力”等模糊归因。
+- id: next_action_clarity
+  name: 行动计划
+  weight: 20
+  excellent: 重点改进项、动作、标准、节点和支持明确。
+  risk: 没有下一步或没有验证标准。
+- id: language_quality
+  name: 反馈语言质量
+  weight: 10
+  excellent: 对事不对人，表达具体、清晰、低防御。
+  risk: 使用标签、比较式贬低、情绪化语言。
+forbidden_patterns:
+- pattern: 你态度不太行
+  reason: 人格化评价
+  replace_with: 在 X 项目中，Y 节点没有按约定同步，导致 Z 影响。
+- pattern: 我感觉你状态不对
+  reason: 主观感受替代事实
+  replace_with: 我观察到最近两次交付分别延迟了 X 天和 Y 天，我们一起看原因。
+- pattern: 整体还可以，但要更主动
+  reason: 改进要求不具体
+  replace_with: 下个周期请在需求变更后 24 小时内同步风险，并在周会上更新阻塞项。
+- pattern: 这次就是通知你结果
+  reason: 剥夺表达权
+  replace_with: 我会说明目前的评估依据，也希望听你补充事实和不同意见。
+output_contract:
+  schema: PerformanceEvaluationResult
+  task_id: performance_evaluation
+  task_name: 绩效反馈质量评估
+  score_policy: success 时输出 0-100；insufficient_information 时 score=null 并说明缺口。
+  task_specific_fields:
+    feedback_sequence_coverage: 逐项标注 sequence 中每一步是否完成。
+    better_phrases: 给出更具体、对事不对人的替代表达。
+execution:
+  stage: post_rehearsal_coach
+  trigger: 用户结束多轮预演或达到最大用户回合后，由 coach_service 调用 coach_orchestrator 执行。
+  required_inputs:
+  - confirmed_employee_profile
+  - intent_config
+  - persona_config
+  - difficulty_config
+  - conversation_history
+  evidence_policy: 所有关于 Manager 表现的判断必须引用 conversation_history 中的 manager 原话或轮次。

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">HR icon placeholder</title>
+  <desc id="desc">Neutral placeholder icon for HR Conversation Coach. Replace with an authorized Bosch icon from Bosch Frontend Kit or internal icon library if required.</desc>
+  <rect x="8" y="8" width="80" height="80" rx="8" fill="#FFFFFF" stroke="#007BC0" stroke-width="4"/>
+  <path d="M28 60V36h8v9h24v-9h8v24h-8v-9H36v9h-8Z" fill="#007BC0"/>
+  <rect x="20" y="72" width="56" height="4" rx="2" fill="#E20015"/>
+</svg>

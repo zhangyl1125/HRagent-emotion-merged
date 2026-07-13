@@ -1,0 +1,260 @@
+version: v0.6
+name: red_line_rules
+purpose: 检测多轮预演中 Manager 话术红线；规则先扫，LLM 再做语义判断和替代表达建议；不输出法律定论。
+policy:
+  scan_speaker: manager
+  matching: rule_first_then_llm_semantic_check
+  not_legal_judgement: true
+  priority: critical/high 风险必须置顶，且优先于普通评分。
+  execution_stage: post_rehearsal_coach
+  evidence_policy: matched_text 必须来自 conversation_history 中的 manager 原话；不得用假设场景替代。
+shared_safer_guidance:
+- 改为具体事实、行为、结果和影响描述。
+- 给员工表达和澄清空间，避免威胁、压迫或人格判断。
+- 涉及离职、降薪、PIP、病假、孕产、工伤、争议等敏感场景，提示 HR/Legal 介入。
+- 不承诺未审批的薪酬、晋升、评级、PIP 或终止雇佣结果。
+severity_definition:
+  critical: 疑似法律/合规高风险或敏感场景重大风险，必须置顶提示。
+  high: 明显伤害尊严、公正或沟通安全，必须改写。
+  medium: 表达不稳妥，建议优化。
+  low: 轻微表述瑕疵，可优化。
+rules:
+- id: termination_or_salary_overreach
+  category: 法律与合规
+  name: 越权解除/降薪/变相逼迫离职
+  severity: critical
+  keywords:
+  - 明天不用来了
+  - 直接降薪
+  - 主动辞职
+  - 自己走人
+  - PIP就是走流程
+  - 不签就走
+  - 公司不会留你
+  examples:
+  - 你绩效垫底，明天不用来了。
+  - 你要是不认可结果，就自己主动辞职吧。
+  coach_focus: 避免对离职、降薪、PIP 结果作越权或违法暗示；提示 HR/Legal 介入。
+  safer_template: 今天不讨论任何未经确认的处理结果。我们先围绕本周期事实、流程和下一步安排沟通，涉及正式决定会按公司流程处理。
+- id: protected_status_discrimination
+  category: 法律与合规
+  name: 涉及个人属性或敏感状态的歧视性表达
+  severity: critical
+  keywords:
+  - 女员工
+  - 生育后
+  - 怀孕
+  - 产假
+  - 病假
+  - 工伤
+  - 年纪大
+  - 外地人
+  - 残疾
+  - 疾病
+  - 家庭原因
+  examples:
+  - 你们女员工就是事多。
+  - 年纪大了就是拼不动。
+  - 你病假太多所以绩效差。
+  coach_focus: 不得将性别、年龄、地域、健康、家庭、病假、孕产、工伤等个人属性作为绩效依据。
+  safer_template: 这次反馈只基于工作目标、实际结果和可核验行为，不讨论与绩效事实无关的个人属性。
+- id: sensitive_context_overcollection
+  category: 隐私与边界
+  name: 敏感细节过度采集或追问
+  severity: critical
+  keywords:
+  - 诊断是什么
+  - 病历
+  - 家庭细节
+  - 为什么请病假
+  - 怀孕计划
+  - 婚育计划
+  - 工伤细节
+  examples:
+  - 你把病历发我看看，不然绩效不好解释。
+  coach_focus: 敏感约束只采集是/否/未知和业务影响摘要，不采集诊断、家庭、健康细节。
+  safer_template: 如果有影响工作的客观限制，你只需要说明对工作安排的影响和需要的支持，不需要提供私人或医疗细节。
+- id: personal_attack_labeling
+  category: 人格与尊严
+  name: 人身攻击与人格标签
+  severity: high
+  keywords:
+  - 蠢货
+  - 废物
+  - 脑子有病
+  - 人品有问题
+  - 道德败坏
+  - 玻璃心
+  - 态度差
+  - 不够努力
+  - 没救了
+  examples:
+  - 你就是个废物。
+  - 你这个人态度差。
+  coach_focus: 禁止把工作问题上升为人格、道德或心理标签。
+  safer_template: 我想聚焦在具体行为和结果上：在 X 项目中，Y 节点没有按约定完成，带来了 Z 影响。
+- id: dignity_devaluation_pua
+  category: 人格与尊严
+  name: 贬低人格与情感勒索
+  severity: high
+  keywords:
+  - 出去没人要
+  - 活不过三天
+  - 为了你好
+  - 不感恩
+  - 顶嘴
+  - 给你机会还不珍惜
+  examples:
+  - 除了我们公司，你出去连饭都吃不上。
+  - 我这么做是为了你好，你还顶嘴。
+  coach_focus: 避免用羞辱、贬低或情感勒索制造服从。
+  safer_template: 我理解你可能不同意，但我们需要回到事实和岗位要求，一起确认哪些地方需要调整。
+- id: threat_intimidation
+  category: 人格与尊严
+  name: 威胁与恐吓
+  severity: high
+  keywords:
+  - 混不下去
+  - 有的是办法整你
+  - 后果自负
+  - 别怪我
+  - 封杀
+  - 让你难看
+  examples:
+  - 你再顶嘴，我让你在行业混不下去。
+  - 不签字是吧？我有的是办法。
+  coach_focus: 禁止通过权力威胁迫使员工接受结论。
+  safer_template: 你可以表达不同意见，我们会记录分歧，并按既定流程继续确认。
+- id: privacy_intrusion
+  category: 隐私与边界
+  name: 无关个人或家庭隐私追问
+  severity: high
+  keywords:
+  - 离婚
+  - 失恋
+  - 家庭不和
+  - 买房
+  - 财务压力
+  - 生病细节
+  - 家里出事
+  - 私生活
+  examples:
+  - 你最近绩效差，是不是因为家庭不和？
+  coach_focus: 不得无依据追问或揣测私人生活；只讨论工作事实和必要支持。
+  safer_template: 如果有影响工作的客观困难，你可以只说明需要什么工作支持，不需要提供私人细节。
+- id: non_work_factor_evaluation
+  category: 程序与公正
+  name: 非工作因素纳入绩效
+  severity: high
+  keywords:
+  - 不自愿加班
+  - 不参加团建
+  - 不给领导送礼
+  - 不站队
+  - 不陪酒
+  - 不合群所以低分
+  examples:
+  - 你不自愿加班，态度就不端正。
+  - 你不参加团建，所以协作分低。
+  coach_focus: 绩效依据必须来自工作目标、行为、结果和岗位要求。
+  safer_template: 我们只看与岗位要求直接相关的协作行为和业务影响。
+- id: unsupported_accusation
+  category: 证据与公正
+  name: 无证据指控或听说式评价
+  severity: high
+  keywords:
+  - 大家都觉得
+  - 我感觉
+  - 肯定摸鱼
+  - 就是没用心
+  - 都说你不行
+  - 明显不认真
+  examples:
+  - 大家都觉得你不行。
+  - 我觉得你态度不好，虽然业绩达标。
+  coach_focus: 所有负面反馈必须有可核验事实或数据。
+  safer_template: 我先给出可核验的事实：在 A、B 两个节点出现了延迟，分别造成了 C 影响。你也可以补充你的视角。
+- id: deception_or_forced_signoff
+  category: 程序与公正
+  name: 不诚信、诱导确认或强迫签字
+  severity: critical
+  keywords:
+  - 先签字
+  - 后面不会真扣
+  - 只是形式
+  - 不会有影响
+  - 不用看细节
+  - 签了再说
+  examples:
+  - 你先签了字，后面不会真扣你钱。
+  coach_focus: 禁止用误导方式诱导员工确认文件或结论。
+  safer_template: 你可以先阅读内容并提出问题。确认或签署会按正式流程进行，不需要现在被迫表态。
+- id: unauthorized_promise
+  category: 程序与公正
+  name: 越权承诺评级/晋升/调薪/资源
+  severity: high
+  keywords:
+  - 我保证你晋升
+  - 我保证调薪
+  - 评级一定改
+  - 资源一定给你
+  - 我说了算
+  examples:
+  - 你先接受这个结果，我保证下次给你晋升。
+  coach_focus: 不得承诺未审批结果或流程外安排。
+  safer_template: 我不能承诺未经审批的结果，但可以明确接下来可执行的改进动作、支持方式和评估节点。
+- id: comparative_devaluation
+  category: 沟通安全
+  name: 比较式贬低
+  severity: high
+  keywords:
+  - 你看别人
+  - 谁都比你强
+  - 全组最差
+  - 不如新人
+  - 拖后腿
+  - 垫底
+  examples:
+  - 你连新人都不如。
+  - 全组就你最差。
+  coach_focus: 避免羞辱式比较，改为岗位标准和个人差距。
+  safer_template: 我们不做羞辱式比较，先看你当前结果和岗位要求之间的差距。
+- id: deny_right_to_speak
+  category: 表达权与心理安全
+  name: 剥夺表达权
+  severity: high
+  keywords:
+  - 不用解释
+  - 没什么好说
+  - 我不想听
+  - 结果已经定了
+  - 只是通知你
+  - 没有讨论空间
+  examples:
+  - 今天只是通知你结果，没有什么好讨论。
+  - 你不用解释，我不想听。
+  coach_focus: 必须给员工表达、澄清和确认空间。
+  safer_template: 我会先说明我的观察，也希望听到你的补充。如果有事实不完整的地方，我们一起核对。
+- id: cold_violence
+  category: 表达权与心理安全
+  name: 冷暴力与消极应对
+  severity: medium
+  keywords:
+  - 随便你
+  - 你自己看着办
+  - 我懒得说
+  - 以后别来找我
+  - 自己负责
+  examples:
+  - 随便你，反正后果你自己承担。
+  coach_focus: 避免回避式、惩罚式沉默，改为明确下一步和支持边界。
+  safer_template: 我们先把下一步责任、时间点和可获得的支持说清楚。
+output_contract:
+  schema: RedlineCheckResult
+  task_id: redline_check
+  task_name: 红线表达检查
+  score_policy: redline_check 不打分，score 始终为 null；命中 high/critical 时必须输出 risks 和 better_phrases。
+  task_specific_fields:
+    risks: 命中时必须包含 rule_id、severity、matched_text、reason、safer_alternative。
+    evidence: matched_text 必须来自 manager 原话；复盘评估可来自待谈输入。
+    better_phrases: 每个 high/critical risk 至少给 1 条替代表达。

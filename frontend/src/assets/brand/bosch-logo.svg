@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="64" viewBox="0 0 260 64" role="img" aria-labelledby="title desc">
+  <title id="title">Bosch logo placeholder</title>
+  <desc id="desc">Placeholder wordmark for development only. Replace with the official authorized Bosch logo SVG from Bosch Brand Guide or internal brand assets before formal use.</desc>
+  <rect width="260" height="64" fill="none"/>
+  <text x="0" y="43"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="42"
+        font-weight="700"
+        letter-spacing="1.5"
+        fill="#E20015">BOSCH</text>
+</svg>

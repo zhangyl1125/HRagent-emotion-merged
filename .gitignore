@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Conda
+.conda/
+
+# Env / secrets
+.env
+*.env
+backend/config/.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Large raw files
+*.xml
+*.xml.gz
+*.zip
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Runtime artifacts
+data/runtime/
+data/redis/
+data/kb_processed/
+data/upload_raw/
+data/upload_processed/

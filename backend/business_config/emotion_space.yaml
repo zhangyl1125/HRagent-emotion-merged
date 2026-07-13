@@ -1,0 +1,67 @@
+version: v1
+name: dynamic_vad_emotion_space
+notes:
+  - 情绪事实来源是三维 VAD：valence、arousal、dominance。
+  - 锚点数量完全配置化，可增删；代码不假设固定情绪数量。
+  - 满足度分数不参与情绪转移计算。
+default_big_five:
+  openness: 50
+  conscientiousness: 50
+  extraversion: 50
+  agreeableness: 50
+  neuroticism: 50
+personality_initial_vad_weights:
+  # 初始 VAD = 默认情绪锚点 VAD + 大五人格偏移。
+  # 每个维度按 (score - 50) / 50 标准化，50 分不产生偏移。
+  # 高神经质会更负向、更高激活、更低控制感；低神经质会反向偏移。
+  max_axis_delta: 0.35
+  dimensions:
+    openness: {valence: 0.08, arousal: 0.03, dominance: 0.06}
+    conscientiousness: {valence: 0.04, arousal: -0.08, dominance: 0.18}
+    extraversion: {valence: 0.12, arousal: 0.18, dominance: 0.10}
+    agreeableness: {valence: 0.16, arousal: -0.12, dominance: 0.04}
+    neuroticism: {valence: -0.24, arousal: 0.26, dominance: -0.18}
+default_anchor: cautious_neutral
+initial_anchor_by_intent:
+  development: cautious_neutral
+  improvement: anxious_defensive
+  exit: defensive_resistant
+  development_improvement: skeptical_controlled
+  improvement_exit: anxious_defensive
+anchors:
+  - id: calm_receptive
+    name: 平静接收
+    description: 能听进去，情绪低激活。
+    vad: {valence: 0.25, arousal: -0.35, dominance: 0.15}
+  - id: cautious_neutral
+    name: 谨慎观望
+    description: 没有被激怒，但仍在评估。
+    vad: {valence: 0.0, arousal: 0.0, dominance: 0.0}
+  - id: skeptical_controlled
+    name: 克制质疑
+    description: 保持控制感，要求解释和证据。
+    vad: {valence: -0.25, arousal: 0.25, dominance: 0.35}
+  - id: disappointed_withdrawn
+    name: 失望退缩
+    description: 负向、低控制感，表达变少。
+    vad: {valence: -0.45, arousal: -0.15, dominance: -0.35}
+  - id: anxious_defensive
+    name: 焦虑防御
+    description: 担心后果，防备明显。
+    vad: {valence: -0.55, arousal: 0.55, dominance: -0.45}
+  - id: defensive_resistant
+    name: 防御抵触
+    description: 明显抗拒，质疑对方动机。
+    vad: {valence: -0.65, arousal: 0.55, dominance: 0.1}
+  - id: angry_challenging
+    name: 愤怒挑战
+    description: 高激活、高控制感，直接反驳。
+    vad: {valence: -0.8, arousal: 0.85, dominance: 0.65}
+  - id: hopeful_negotiating
+    name: 有条件协商
+    description: 开始看到可能性，但仍要求条件。
+    vad: {valence: 0.2, arousal: 0.2, dominance: 0.35}
+  - id: aligned_ready
+    name: 接纳行动
+    description: 接受反馈，愿意对齐后续行动。
+    vad: {valence: 0.65, arousal: -0.05, dominance: 0.45}

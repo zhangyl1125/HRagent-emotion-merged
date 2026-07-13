@@ -1,0 +1,144 @@
+version: v0.6
+name: manager_performance_feedback_rubric
+purpose: 按 markdown 的 7 维评估多轮预演后 Manager 绩效反馈质量，并按 intent 补充特定维度；仅用于 Coach 复盘评估。
+scale:
+  excellent: 3
+  qualified: 2
+  weak: 1
+  risk: 0
+score_mapping:
+  '3': 90-100
+  '2': 70-89
+  '1': 40-69
+  '0': 0-39
+scoring_rules:
+- 只在 post_rehearsal_coach 阶段评分。
+- 每个维度必须引用 manager 原话或对话轮次；无证据不得给 excellent。
+- redline.yaml 的 critical/high 风险优先于普通评分，必须置顶。
+- 没有足够对话证据时 status=insufficient_information，score 可为 null，不强行评分。
+base_dimensions:
+- id: opening_frame
+  name: 开场框定
+  weight: 15
+  excellent: 清晰说明谈话目的、考核周期、讨论方式，并主动给员工表达空间。
+  qualified: 说明了绩效结论或主题，但背景、议程或员工表达空间不完整。
+  weak: 直接进入判断或问题，员工不清楚谈话结构。
+  risk: 以“通知结果”“没什么好讨论”等方式剥夺表达空间。
+  good_phrase: 今天主要想和你聊聊本周期的绩效复盘。我会先听听你的总结，再分享我看到的事实和影响，最后一起确认下一步。
+  risky_phrase: 今天就是通知你结果，没有什么好讨论的。
+- id: fact_evidence
+  name: 事实证据
+  weight: 18
+  excellent: 围绕目标、结果、具体项目、正负面事实和影响展开。
+  qualified: 有事实，但缺少数据、时间、影响或具体例子。
+  weak: 主要依赖印象和概括性评价。
+  risk: 无证据定性、听说式评价或主观指责。
+- id: listening_response
+  name: 倾听回应
+  weight: 12
+  excellent: 给员工解释空间，能复述关键关切并确认理解。
+  qualified: 有倾听动作，但回应偏模板化。
+  weak: 员工表达后很快转回说教或结论。
+  risk: 打断、否定、压制或拒绝听员工解释。
+- id: emotion_handling
+  name: 情绪处理
+  weight: 15
+  excellent: 识别员工防御、焦虑、委屈或沉默，先承接再推进事实。
+  qualified: 有基本安抚，但未充分连接员工关切。
+  weak: 忽略明显情绪，只继续讲标准。
+  risk: 把情绪反应定性为态度差、玻璃心或不配合。
+- id: expectation_setting
+  name: 期望设定
+  weight: 15
+  excellent: 明确未来目标、行动、时间节点、验证标准和管理者支持边界。
+  qualified: 有改进方向，但缺少节点、标准或支持。
+  weak: 只有泛泛建议。
+  risk: 没有下一步，或只要求员工自行改。
+- id: policy_compliance
+  name: 政策合规
+  weight: 15
+  excellent: 措辞稳妥，不越权承诺薪酬、晋升、PIP 或离职结果；敏感场景提示 HR/Legal。
+  qualified: 总体稳妥，但政策边界说明不足。
+  weak: 容易让员工误解流程或结果已经确定。
+  risk: 出现歧视、违法解除、越权承诺、诱导签字或敏感个人属性评价。
+- id: closure_followup
+  name: 收尾承诺
+  weight: 10
+  excellent: 总结共识与分歧，确认记录、跟进节奏、责任人和下一次检查点。
+  qualified: 有简单后续安排。
+  weak: 结束仓促，没有确认双方理解。
+  risk: 无确认、无记录、无跟进节点，或以威胁方式结束。
+intent_specific_dimensions:
+  pip_underperformance:
+  - id: pip_gap_definition
+    name: 差距定义
+    weight: 20
+    excellent: 明确绩效差距、影响和具体证据，不把 PIP 说成惩罚。
+  - id: pip_plan_executability
+    name: 改进计划可执行性
+    weight: 30
+    excellent: 行动、资源、里程碑、验证标准和时间节点清楚。
+  - id: pip_support_resources
+    name: 支持资源
+    weight: 20
+    excellent: 说明管理者/组织可提供的支持及边界。
+  - id: pip_timeline
+    name: 时间节点
+    weight: 30
+    excellent: 明确检查频率、阶段目标和正式流程边界。
+  promotion_development:
+  - id: recognition_clarity
+    name: 认可清晰度
+    weight: 35
+    excellent: 具体说明被认可的成果、行为和岗位价值。
+  - id: development_path
+    name: 发展路径
+    weight: 35
+    excellent: 指出下一阶段能力要求、机会和行动路径。
+  - id: expectation_management
+    name: 期望管理
+    weight: 30
+    excellent: 不越权承诺晋升/调薪，清楚说明流程和不确定性。
+  termination_or_separation:
+  - id: policy_consistency
+    name: 政策一致性
+    weight: 35
+    excellent: 口径与公司流程一致，不自行宣布未经确认结果。
+  - id: wording_risk
+    name: 措辞风险
+    weight: 35
+    excellent: 避免威胁、羞辱、诱导、歧视或违法暗示。
+  - id: hr_legal_escalation
+    name: HR/Legal 升级提示
+    weight: 30
+    excellent: 敏感或争议场景明确提示 HR/Legal 介入。
+hard_gates:
+- id: no_fact_basis
+  condition: 核心负面结论没有事实、数据或具体案例
+  effect: must_flag_risk
+- id: deny_right_to_speak
+  condition: 剥夺员工表达、澄清或确认空间
+  effect: must_flag_high_risk
+- id: redline_critical
+  condition: 命中 redline.yaml critical 规则
+  effect: must_flag_critical_risk_and_downgrade
+- id: no_followup
+  condition: 没有行动、验证标准或跟进节点
+  effect: cannot_rate_above_qualified
+output_contract:
+  schema: RubricEvaluationResult
+  task_id: rubric_evaluation
+  task_name: 综合 Rubric 评分
+  score_policy: success 时输出加权总分 0-100；insufficient_information 时 score=null 并说明缺口。
+  dimension_scores: 必须覆盖 base_dimensions；若 intent 命中，则补充 intent_specific_dimensions。
+  suggestions: 按风险优先级输出 3-5 条。
+execution:
+  stage: post_rehearsal_coach
+  trigger: 用户结束多轮预演或达到最大用户回合后，由 coach_service 调用 coach_orchestrator 执行。
+  required_inputs:
+  - confirmed_employee_profile
+  - intent_config
+  - persona_config
+  - difficulty_config
+  - conversation_history
+  evidence_policy: 所有关于 Manager 表现的判断必须引用 conversation_history 中的 manager 原话或轮次。
