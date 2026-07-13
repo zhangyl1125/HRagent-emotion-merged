@@ -174,7 +174,7 @@ export default function SimulationStep() {
                   })}
                 </div>
               )}
-              <small>{secondaryMotives.length ? secondaryMotives.map((item) => motiveText(item)).filter(Boolean).join('；') : '选择两个次要诉求，用于补充员工的诉求立场；诉求满足度与 VAD 情绪独立变化。'}</small>
+              <small>{secondaryMotives.length ? secondaryMotives.map((item) => motiveText(item)).filter(Boolean).join('；') : '选择两个次要诉求，用于叠加员工情绪反应。'}</small>
             </div>
           </div>
           <div className="simulation-card-action"><button className="btn btn-primary btn-wide" onClick={submit} disabled={!canSubmit}>确认人格与诉求</button></div>

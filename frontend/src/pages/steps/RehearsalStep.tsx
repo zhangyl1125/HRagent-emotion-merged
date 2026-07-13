@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { EmotionBadge } from '../../components/rehearsal/EmotionBadge';
 import { useRealtimeAsr } from '../../hooks/useRealtimeAsr';
 import { useTtsPlayback } from '../../hooks/useTtsPlayback';
-import type { BigFivePersonality, ConversationTurn } from '../../types/domain';
+import type { ConversationTurn } from '../../types/domain';
 import { firstText } from '../../utils/format';
 
 function VoiceWave({ active }: { active?: boolean }) {
@@ -109,19 +108,6 @@ function ChatMessage({
   );
 }
 
-const personalityLabels: Array<[keyof BigFivePersonality, string]> = [
-  ['openness', '开放'],
-  ['conscientiousness', '尽责'],
-  ['extraversion', '外向'],
-  ['agreeableness', '宜人'],
-  ['neuroticism', '敏感'],
-];
-
-function personalityText(personality?: BigFivePersonality | null) {
-  if (!personality) return '';
-  return personalityLabels.map(([key, label]) => `${label} ${Math.round(Number(personality[key]) || 0)}`).join(' / ');
-}
-
 function formatNumber(value: unknown, fallback = '0') {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric.toFixed(2) : fallback;
@@ -165,9 +151,8 @@ export default function RehearsalStep() {
   const emotionAnchor = options.emotion_anchors.find((item) => item.id === session?.emotion_state?.current_anchor_id);
   const vad = session?.emotion_state?.current_vad;
   const satisfaction = typeof session?.motivation?.total_satisfaction === 'number'
-    ? `${Math.round(session.motivation.total_satisfaction)} 分`
+    ? `${Math.round(session.motivation.total_satisfaction)}%`
     : '0%';
-  const personality = personalityText(session?.personality);
   const asr = useRealtimeAsr({
     onPartialTranscript: (text, event) => {
       setMessage(text);
@@ -338,18 +323,15 @@ export default function RehearsalStep() {
             <div><span>当前情绪</span><strong>{emotionAnchor?.name || session?.emotion_state?.current_anchor_id || '未设置'}</strong></div>
             <div><span>动态设定</span><strong>{runtimeNotesCount ? `${runtimeNotesCount} 条` : '未追加'}</strong></div>
           </div>
-          {personality && <div className="summary-block"><h3>人格倾向</h3><p>{personality}</p></div>}
           {vad && <div className="summary-block"><h3>VAD</h3><p>Valence {formatNumber(vad.valence)} / Arousal {formatNumber(vad.arousal)} / Dominance {formatNumber(vad.dominance)}</p></div>}
-          {session?.emotion_state?.current_attitude && <EmotionBadge emotionState={session.emotion_state} />}
           {session?.motivation?.last_change_reason && <div className="summary-block"><h3>最近满足度变化</h3><p>{session.motivation.last_change_reason}</p></div>}
-          {session?.emotion_state?.last_reason_summary && <div className="summary-block"><h3>最近情绪变化</h3><p>{session.emotion_state.last_reason_summary}</p></div>}
           <button className="btn btn-secondary" type="button" onClick={() => setContextOpen(true)}>调整动态信息</button>
         </aside>
       </div>
 
       <div className={`rehearsal-context-widget ${contextOpen ? 'open' : ''}`}>
         {contextOpen && (
-          <div className="rehearsal-context-panel" role="dialog" aria-label="调整动态信息">
+          <div className="rehearsal-context-panel" role="dialog" aria-label="调整本轮模拟设定">
             <div className="context-panel-head">
               <div>
                 <strong>调整动态信息</strong>
