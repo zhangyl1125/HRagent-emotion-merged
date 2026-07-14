@@ -35,9 +35,10 @@ HRagent-05 Locust load test file.
   HRAGENT_VERIFY_TLS                是否验证 HTTPS 证书，默认: true（自签证书可设为 false）
   HRAGENT_READ_ENDPOINTS            逗号分隔的 GET 接口列表（用于读压测）
   HRAGENT_POST_ENDPOINTS_JSON       JSON 列表，定义 POST 业务接口（用于写压测）
-  HRAGENT_FLOW_MODE                  basic 或 full；full 时 1 用户只跑一次完整六步流程
+  HRAGENT_FLOW_MODE                  basic 或 full；full 时 1 用户只跑一次完整流程
   HRAGENT_FULL_FLOW_MESSAGES_MIN     full 模式每位用户最少预演轮数，默认: 5
   HRAGENT_FULL_FLOW_MESSAGES_MAX     full 模式每位用户最多预演轮数，默认: 10
+  HRAGENT_REPORT_TIMEOUT_SECONDS     复盘 SSE 的单次空闲读取超时(秒)，默认: 600
   HRAGENT_MAX_FAIL_RATIO            质量门禁-最大失败率，默认: 0.01 (1%)
   HRAGENT_MAX_AVG_MS                质量门禁-最大平均响应时间(ms)，默认: 800
   HRAGENT_MAX_P95_MS                质量门禁-最大P95响应时间(ms)，默认: 2000
@@ -50,6 +51,7 @@ import logging
 import os
 import random
 from itertools import count
+from time import perf_counter
 from http.cookies import SimpleCookie
 from threading import Lock
 from typing import Any
@@ -507,22 +509,24 @@ class HRagentUser(HttpUser):
             )
             options = self._get_json("/api/v1/setup/options", "GET /api/v1/setup/options")
             intent_id = self._select_intent_id(options)
-            persona_id = self._select_persona_id(options, intent_id)
-            difficulty_id = str(options.get("default_difficulty") or "medium")
-
             self._patch_json(
                 f"/api/v1/setup/{session_id}/intent",
                 {"intent_id": intent_id, "free_text": None},
                 "PATCH /api/v1/setup/[session]/intent",
             )
+            personality, primary_motive_id, secondary_motive_ids = self._select_simulation_options(
+                options,
+                intent_id,
+            )
             self._patch_json(
-                f"/api/v1/setup/{session_id}/persona",
+                f"/api/v1/setup/{session_id}/simulation",
                 {
-                    "persona_id": persona_id,
-                    "difficulty_id": difficulty_id,
+                    "personality": personality,
+                    "primary_motive_id": primary_motive_id,
+                    "secondary_motive_ids": secondary_motive_ids,
                     "run_mode": "guidance_then_rehearsal",
                 },
-                "PATCH /api/v1/setup/[session]/persona",
+                "PATCH /api/v1/setup/[session]/simulation",
             )
             self._post_json(f"/api/v1/setup/{session_id}/complete", {}, "POST /api/v1/setup/[session]/complete")
             self._post_guidance_stream(session_id)
@@ -541,7 +545,7 @@ class HRagentUser(HttpUser):
                     "POST /api/v1/rehearsal/[session]/message",
                 )
             self._post_json(f"/api/v1/rehearsal/{session_id}/end", {}, "POST /api/v1/rehearsal/[session]/end")
-            self._post_coach_report(session_id)
+            self._post_coach_report_stream(session_id)
             self._get_json(f"/api/v1/sessions/{session_id}", "GET /api/v1/sessions/[session]")
         finally:
             self._logout_once()
@@ -615,18 +619,53 @@ class HRagentUser(HttpUser):
             resp.success()
             return done_payload
 
-    def _post_coach_report(self, session_id: str) -> dict[str, Any]:
-        path = f"/api/v1/reports/{session_id}/coach"
-        name = "POST /api/v1/reports/[session]/coach"
-        timeout_seconds = max(30, env_int("HRAGENT_REPORT_TIMEOUT_SECONDS", 180))
-        with self.client.post(
-            path,
-            json={},
-            name=name,
-            timeout=(5, timeout_seconds),
-            catch_response=True,
-        ) as resp:
-            return self._json_or_fail(resp, name)
+    def _post_coach_report_stream(self, session_id: str) -> dict[str, Any]:
+        path = f"/api/v1/reports/{session_id}/coach/stream"
+        name = "POST /api/v1/reports/[session]/coach/stream"
+        # This is an SSE idle-read timeout, not a target response-time objective.
+        # A report may wait behind the backend's per-worker report gate.
+        timeout_seconds = max(30, env_int("HRAGENT_REPORT_TIMEOUT_SECONDS", 600))
+        started_at = perf_counter()
+        with self.client.post(path, json={}, name=name, stream=True, timeout=(5, timeout_seconds), catch_response=True) as resp:
+            if resp.status_code != 200:
+                body = resp.text[:500] if hasattr(resp, "text") else ""
+                resp.failure(f"{name} failed status={resp.status_code}, body={body}")
+                raise StopUser()
+
+            event_name = "message"
+            done_payload: dict[str, Any] | None = None
+            for raw_line in resp.iter_lines(decode_unicode=True, chunk_size=1):
+                if raw_line is None:
+                    continue
+                line = raw_line.strip()
+                if not line:
+                    continue
+                if line.startswith("event:"):
+                    event_name = line.split(":", 1)[1].strip() or "message"
+                    continue
+                if not line.startswith("data:"):
+                    continue
+
+                payload_text = line.split(":", 1)[1].strip()
+                try:
+                    payload = json.loads(payload_text) if payload_text else {}
+                except json.JSONDecodeError:
+                    payload = {"raw": payload_text}
+                if event_name == "error":
+                    resp.failure(f"{name} stream error: {payload}")
+                    raise StopUser()
+                if event_name == "done":
+                    done_payload = payload if isinstance(payload, dict) else {"data": payload}
+                    break
+
+            if done_payload is None:
+                resp.failure(f"{name} ended without done event")
+                raise StopUser()
+
+            # stream=True otherwise measures only time to the SSE response headers.
+            resp.request_meta["response_time"] = int((perf_counter() - started_at) * 1000)
+            resp.success()
+            return done_payload
 
     def _try_get_coach_report(self, path: str) -> dict[str, Any] | None:
         with self.client.get(path, name="GET /api/v1/reports/[session]/coach", timeout=(5, 30), catch_response=True) as resp:
@@ -664,15 +703,30 @@ class HRagentUser(HttpUser):
         return str(intents[0]["id"])
 
     @staticmethod
-    def _select_persona_id(options: dict[str, Any], intent_id: str) -> str:
-        personas = options.get("personas") or []
-        if not personas:
-            raise RuntimeError("setup options missing personas")
-        for persona in personas:
-            suitable = {str(item) for item in persona.get("suitable_intents") or []}
-            if intent_id in suitable:
-                return str(persona["id"])
-        return str(personas[0]["id"])
+    def _select_simulation_options(options: dict[str, Any], intent_id: str) -> tuple[dict[str, int], str, list[str]]:
+        default_personality = options.get("default_big_five") or {}
+        personality = {
+            key: int(default_personality.get(key, 50))
+            for key in ("openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism")
+        }
+        motive_ids = [str(item.get("id") or "") for item in options.get("motives") or []]
+        motive_ids = [motive_id for motive_id in motive_ids if motive_id]
+        if len(motive_ids) < 3:
+            raise RuntimeError("setup options must include at least three motives")
+
+        recommendations = options.get("motive_recommendations") or {}
+        recommendation = recommendations.get(intent_id) or options.get("default_motive_recommendation") or {}
+        primary_motive_id = str(recommendation.get("primary_motive_id") or "")
+        secondary_motive_ids = [
+            str(motive_id)
+            for motive_id in recommendation.get("secondary_motive_ids") or []
+            if str(motive_id) in motive_ids and str(motive_id) != primary_motive_id
+        ]
+        if primary_motive_id not in motive_ids:
+            primary_motive_id = motive_ids[0]
+        if len(secondary_motive_ids) != 2 or len(set(secondary_motive_ids)) != 2:
+            secondary_motive_ids = [motive_id for motive_id in motive_ids if motive_id != primary_motive_id][:2]
+        return personality, primary_motive_id, secondary_motive_ids
 
     @staticmethod
     def _load_test_profile() -> dict[str, Any]:
@@ -747,6 +801,17 @@ def reset_authorized_test_credentials(environment, **kwargs) -> None:
     with HRagentUser.credential_lock:
         HRagentUser.credential_pool = None
         HRagentUser.credential_index = count()
+
+    uses_fixed_credentials = env_bool("HRAGENT_USE_TEST_CREDENTIAL_TABLE", True)
+    auth_enabled = env_bool("HRAGENT_AUTH_ENABLED", True)
+    has_password = bool(os.getenv("HRAGENT_PASSWORD", "").strip())
+    if auth_enabled and uses_fixed_credentials and not has_password:
+        logging.error(
+            "Load test was not started: HRAGENT_PASSWORD is required for the enabled fixed test accounts. "
+            "Set it in the shell that starts Locust, then start the test again."
+        )
+        environment.process_exit_code = 2
+        environment.runner.quit()
 
 
 # CI/CD 质量门禁 - 测试结束时自动执行

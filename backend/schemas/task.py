@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Literal
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 TaskStatus = Literal["success", "insufficient_information", "failed"]
 RiskSeverity = Literal["critical", "high", "medium", "low"]
@@ -52,6 +52,36 @@ class CoachTaskResult(BaseModel):
     better_phrases: list[BetterPhrase] = Field(default_factory=list)
     citations: list[dict] = Field(default_factory=list)
     extra: dict = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def preserve_unstructured_evidence(cls, value: Any) -> Any:
+        """Retain real model analysis that is not a usable conversation reference."""
+        if not isinstance(value, dict):
+            return value
+        raw_evidence = value.get("evidence")
+        if raw_evidence is None or raw_evidence == {}:
+            return value
+        entries = list(raw_evidence) if isinstance(raw_evidence, (list, tuple)) else [raw_evidence]
+        references: list[dict[str, Any]] = []
+        unstructured: list[Any] = []
+        for entry in entries:
+            if isinstance(entry, dict) and {"turn_index", "speaker", "quote"}.issubset(entry):
+                references.append(entry)
+            else:
+                unstructured.append(entry)
+        if not unstructured:
+            return value
+        normalized = dict(value)
+        normalized["evidence"] = references
+        extra = dict(normalized.get("extra") or {})
+        existing = extra.get("unstructured_evidence")
+        if existing:
+            extra["unstructured_evidence"] = [*list(existing), *unstructured]
+        else:
+            extra["unstructured_evidence"] = unstructured
+        normalized["extra"] = extra
+        return normalized
 
     @field_validator("status", mode="before")
     @classmethod
@@ -119,11 +149,30 @@ class CoachTaskResult(BaseModel):
             ]
         for index, item in enumerate(items):
             if isinstance(item, dict):
-                normalized.append(item)
+                normalized.append(cls._normalize_dimension_score_item(item))
             elif isinstance(item, (int, float)):
                 normalized.append({"id": f"dimension_{index + 1}", "name": f"dimension_{index + 1}", "score": item})
             else:
                 normalized.append({"id": f"dimension_{index + 1}", "name": f"dimension_{index + 1}", "comment": str(item)})
+        return normalized
+
+    @classmethod
+    def _normalize_dimension_score_item(cls, item: dict[str, Any]) -> dict[str, Any]:
+        """Keep model-provided assessment text without fabricating evidence refs."""
+        normalized = dict(item)
+        evidence = normalized.get("evidence")
+        evidence_texts: list[str] = []
+        if isinstance(evidence, str):
+            evidence_texts = [evidence]
+            normalized["evidence"] = []
+        elif isinstance(evidence, list):
+            evidence_texts = [entry for entry in evidence if isinstance(entry, str)]
+            if evidence_texts:
+                normalized["evidence"] = [entry for entry in evidence if not isinstance(entry, str)]
+        evidence_text = "\n".join(entry.strip() for entry in evidence_texts if entry.strip())
+        if evidence_text:
+            comment = str(normalized.get("comment") or "").strip()
+            normalized["comment"] = f"{comment}\n{evidence_text}" if comment else evidence_text
         return normalized
 
     @classmethod

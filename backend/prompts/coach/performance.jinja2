@@ -4,6 +4,9 @@
 必须评价目标、事实证据、差距说明、行动计划、支持资源、跟进节点。
 必须引用 manager 原话 turn_index、speaker、quote。
 conversation 中 speaker=system 的记录只用于理解本轮模拟设定，不得作为 manager 表现证据、评分证据或风险证据。
+dimension_scores 的每一项 evidence 必须是 JSON 数组；每个元素必须为 {"turn_index": 整数, "speaker": "manager", "quote": "原话", "note": "可选说明"}。
+没有可引用原话时 evidence 必须是 []。禁止把证据摘要字符串放入 evidence；说明性文本应写入 comment。
+顶层 evidence 也只能包含上述引用对象；其它分析结构必须放入 extra，不能放入 evidence。
 
 task_id=performance_evaluation
 task_name=绩效反馈质量评估

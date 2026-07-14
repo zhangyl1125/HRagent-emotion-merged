@@ -173,7 +173,7 @@ class ReportGenerator:
         if not task_results:
             raise ValueError("task_results are required for Coach report section generation")
         prompt = self._build_section_prompt(session_id, task_results, section_key, **context)
-        async for delta in LangChainLLMService().astream_text(prompt=prompt, task_name="coach_report"):
+        async for delta in LangChainLLMService().astream_text(prompt=prompt, task_name="coach_report", response_format="json_object"):
             if delta:
                 yield delta
 
@@ -225,7 +225,7 @@ class ReportGenerator:
             "company_values 和 culture_chunks 仅可用于优势与待改进、建议话术、下一步建议中的补充建议。\n"
             "价值观资料是规范参考，不是经理表现证据；判断经理体现或违背价值观时必须有 manager 原话支持。\n"
             "仅使用与当前场景直接相关的价值观并转成具体管理行为，不新增价值观栏目，不堆砌口号；资料为空时不得编造。\n"
-            "不要输出 Markdown，不要解释 schema，只输出 JSON object。\n"
+            "不要输出 Markdown，不要解释 schema，只输出合法 JSON object；所有字符串使用 JSON 双引号并正确转义。\n"
             f"session_id={session_id}\n"
             f"section_key={section_key}\n"
             f"section_title={COACH_REPORT_SECTION_TITLES[section_key]}\n"

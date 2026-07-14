@@ -33,10 +33,11 @@ class GenericCoachAgent:
         **prompt_vars: Any,
     ) -> CoachTaskResult:
         rendered_prompt = PromptService().render(prompt_template, **prompt_vars)
-        prompt = f"{rendered_prompt}\n\n只输出 CoachTaskResult JSON object，不要输出 Markdown 或额外解释。"
+        prompt = f"{rendered_prompt}\n\n只输出 CoachTaskResult JSON object，不要输出 Markdown 或额外解释。必须返回合法 JSON，所有字符串使用 JSON 双引号并正确转义。"
         raw_output = await LangChainLLMService().ainvoke_text(
             prompt=prompt,
             task_name=task_model_name,
+            response_format="json_object",
         )
         result = self._parse_task_output(raw_output)
         if result.task_id != task_id:

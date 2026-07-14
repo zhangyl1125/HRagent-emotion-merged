@@ -629,13 +629,14 @@ class LangChainLLMService:
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        response_format: str | dict[str, Any] | None = "text",
     ) -> str:
         chain = (
             ChatPromptTemplate.from_messages([("user", "{prompt}")])
             | self.chat_model(
                 task_name=task_name,
                 model=model,
-                response_format="text",
+                response_format=response_format,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
@@ -655,11 +656,12 @@ class LangChainLLMService:
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        response_format: str | dict[str, Any] | None = "text",
     ) -> AsyncIterator[str]:
         chat_model = self.chat_model(
             task_name=task_name,
             model=model,
-            response_format="text",
+            response_format=response_format,
             temperature=temperature,
             max_tokens=max_tokens,
         )

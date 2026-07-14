@@ -2,6 +2,8 @@
 只基于 conversation、emotion_config 和 retrieved_chunks 判断，不要编造证据。
 输出必须是严格 JSON object，字段符合 CoachTaskResult：task_id、task_name、status、score、summary、dimension_scores、evidence、strengths、improvement_points、risks、better_phrases、citations、extra。
 必须引用 manager 或 employee 原话 turn_index、speaker、quote。
+dimension_scores 的每一项 evidence 必须是 JSON 数组；每个元素必须为 {"turn_index": 整数, "speaker": "manager" 或 "employee", "quote": "原话", "note": "可选说明"}。
+没有可引用原话时 evidence 必须是 []。禁止将说明性文本直接写入 evidence；说明性文本应写入 comment。
 conversation 中 speaker=system 的记录只用于理解本轮模拟设定，不得作为情绪承接证据或评分证据。
 
 task_id=emotion_evaluation

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
@@ -9,6 +10,8 @@ from fastapi.responses import StreamingResponse
 from backend.api.dependencies import get_coach_service
 from backend.schemas.coach import CoachReport
 from backend.services.coach_service import CoachService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -33,6 +36,7 @@ async def stream_coach_report(session_id: str, service: CoachService = Depends(g
             async for event in service.stream_generate(session_id):
                 yield _sse(event)
         except Exception:  # noqa: BLE001
+            logger.exception("Coach report stream failed for session_id=%s", session_id)
             yield _sse({"event": "error", "message": "复盘生成失败，请检查模型服务响应后重试。"})
 
     return StreamingResponse(
