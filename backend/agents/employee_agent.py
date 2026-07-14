@@ -7,10 +7,12 @@ import logging
 import re
 
 from backend.exceptions.llm_errors import LLMError
+from backend.schemas.retrieval import RetrievedChunk
 from backend.schemas.state import SessionState
 from backend.services.langchain_llm_service import LangChainLLMService
 from backend.services.prompt_service import PromptService
 from backend.services.dynamic_persona_builder import DynamicPersonaBuilder
+from backend.services.retrieval_service import RetrievalService
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +22,7 @@ class EmployeeAgent:
     """Employee role-play agent.
 
     It uses profile, intent, persona, difficulty and runtime rehearsal context held in SessionState.
-    It does not retrieve policy/methodology KB and does not write session state.
+    It retrieves employee-response context through RetrievalService and does not write session state.
     """
 
     _LEADING_REPLY_BUFFER_CHARS = 4
@@ -29,6 +31,9 @@ class EmployeeAgent:
     _FIRST_DELTA_WARMUP_SECONDS = 0.8
     _STREAM_WARMUP_TEXT = "嗯，"
 
+    def __init__(self, retrieval: RetrievalService | None = None):
+        self.retrieval = retrieval or RetrievalService()
+
     async def reply(self, state: SessionState, latest_manager_message: str) -> str:
         try:
             return await asyncio.wait_for(self._reply_with_llm(state, latest_manager_message), timeout=35)
@@ -36,15 +41,24 @@ class EmployeeAgent:
             logger.warning("Employee LLM failed for session_id=%s; using local fallback: %s", state.session_id, exc)
             return self._fallback_reply(state, latest_manager_message)
 
-    async def stream_reply(self, state: SessionState, latest_manager_message: str) -> AsyncIterator[tuple[str, str]]:
+    async def stream_reply(
+        self,
+        state: SessionState,
+        latest_manager_message: str,
+        retrieved_chunks: list[RetrievedChunk] | None = None,
+    ) -> AsyncIterator[tuple[str, str]]:
         """Stream ``(channel, text)`` pairs.
 
         ``channel`` is ``"reply"`` for the visible employee answer. Chain-of-thought
         deltas are not requested or forwarded.
         """
         try:
+            if retrieved_chunks is None:
+                retrieved_chunks = await asyncio.to_thread(
+                    self.retrieve_general_context, state, latest_manager_message
+                )
             async with asyncio.timeout(60):
-                prompt = self._build_reply_prompt(state, latest_manager_message)
+                prompt = self._build_reply_prompt(state, latest_manager_message, retrieved_chunks)
                 prefixes = self._reply_prefixes(state)
                 emitted = False
                 started = False
@@ -201,7 +215,10 @@ class EmployeeAgent:
         return cleaned
 
     async def _reply_with_llm(self, state: SessionState, latest_manager_message: str) -> str:
-        prompt = self._build_reply_prompt(state, latest_manager_message)
+        retrieved_chunks = await asyncio.to_thread(
+            self.retrieve_general_context, state, latest_manager_message
+        )
+        prompt = self._build_reply_prompt(state, latest_manager_message, retrieved_chunks)
         reply = await LangChainLLMService().ainvoke_text(
             prompt=prompt,
             task_name="employee",
@@ -211,6 +228,45 @@ class EmployeeAgent:
             raise LLMError("Employee Agent returned empty reply.")
         return cleaned
 
+    def retrieve_general_context(
+        self,
+        state: SessionState,
+        latest_manager_message: str,
+        *,
+        raise_errors: bool = False,
+    ) -> list[RetrievedChunk]:
+        context = {
+            "profile": state.employee_profile.model_dump(exclude_none=True) if state.employee_profile else {},
+            "personality": state.personality.model_dump(exclude_none=True) if state.personality else {},
+            "motivation": state.motivation.model_dump(mode="json", exclude_none=True) if state.motivation else {},
+            "emotion_state": state.emotion_state.model_dump(mode="json", exclude_none=True),
+            "rehearsal_context": state.rehearsal_context.model_dump(mode="json", exclude_none=True),
+            "conversation": [
+                turn.model_dump(mode="json", exclude_none=True)
+                for turn in state.conversation[-8:]
+            ],
+            "latest_manager_message": latest_manager_message,
+        }
+        try:
+            return self.retrieval.retrieve("employee_response", context, top_k=4)
+        except Exception as exc:  # noqa: BLE001
+            if raise_errors:
+                raise
+            logger.warning(
+                "Employee response KB retrieval failed for session_id=%s; continuing without chunks: %s",
+                state.session_id,
+                exc,
+            )
+            return []
+
+    @staticmethod
+    def _serialize_retrieved_chunks(
+        chunks: list[RetrievedChunk] | None,
+    ) -> list[dict]:
+        return [
+            chunk.model_dump(mode="json", exclude_none=True)
+            for chunk in chunks or []
+        ]
 
     @staticmethod
     def _fallback_reply(state: SessionState, latest_manager_message: str) -> str:
@@ -249,7 +305,11 @@ class EmployeeAgent:
         return [str(value).strip() for value in values if str(value or "").strip()]
 
     @staticmethod
-    def _build_reply_prompt(state: SessionState, latest_manager_message: str) -> str:
+    def _build_reply_prompt(
+        state: SessionState,
+        latest_manager_message: str,
+        retrieved_chunks: list[RetrievedChunk] | None = None,
+    ) -> str:
         return PromptService().render(
             "employee/reply.jinja2",
             profile=state.employee_profile.model_dump(exclude_none=True) if state.employee_profile else {},
@@ -260,7 +320,14 @@ class EmployeeAgent:
             motivation=state.motivation.model_dump(mode="json", exclude_none=True) if state.motivation else {},
             emotion_state=state.emotion_state.model_dump(mode="json", exclude_none=True),
             rehearsal_context=state.rehearsal_context.model_dump(mode="json", exclude_none=True),
-            emotion_prompt=DynamicPersonaBuilder().build(state.emotion_state),
+            emotion_prompt=(
+                DynamicPersonaBuilder().build(state.emotion_state)
+                if state.motivation is None
+                else ""
+            ),
+            retrieved_chunks=EmployeeAgent._serialize_retrieved_chunks(
+                retrieved_chunks
+            ),
             conversation=json.dumps(
                 [turn.model_dump(mode="json", exclude_none=True) for turn in state.conversation],
                 ensure_ascii=False,
@@ -359,4 +426,3 @@ async def _debug_stream_main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(_debug_stream_main())
-
