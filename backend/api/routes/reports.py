@@ -29,8 +29,11 @@ def _sse(event: dict) -> str:
 @router.post("/{session_id}/coach/stream")
 async def stream_coach_report(session_id: str, service: CoachService = Depends(get_coach_service)):
     async def events():
-        async for event in service.stream_generate(session_id):
-            yield _sse(event)
+        try:
+            async for event in service.stream_generate(session_id):
+                yield _sse(event)
+        except Exception:  # noqa: BLE001
+            yield _sse({"event": "error", "message": "复盘生成失败，请检查模型服务响应后重试。"})
 
     return StreamingResponse(
         events(),

@@ -10,6 +10,8 @@ defaults:
   vector_top_k: 20
   rerank_enabled: true
   rerank_top_n: 5
+  query_parallelism: 8
+  rerank_parallelism: 4
   metadata_filter: {}
   scopes:
     - general

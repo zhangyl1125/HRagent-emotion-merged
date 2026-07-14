@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from collections.abc import AsyncIterator
 from typing import Literal, Mapping
 
@@ -119,7 +120,7 @@ class GuidanceAgent:
         text = text.strip()
         if not text:
             raise ValueError(f"Guidance section {section_key} returned empty text.")
-        return text
+        return self.clean_section_text(text)
 
     async def stream_section(
         self,
@@ -135,7 +136,7 @@ class GuidanceAgent:
             task_name="guidance",
         ):
             if delta:
-                yield delta
+                yield self.clean_section_text(delta, trim=False)
 
     @staticmethod
     def _build_section_prompt(
@@ -170,6 +171,7 @@ class GuidanceAgent:
             "仅使用与当前场景直接相关的价值观，把它转成具体管理行为并自然融入当前栏目；"
             "不要新增价值观栏目，不要堆砌口号。如果 company_values 或 culture_chunks 为空，不得自行编造公司的价值观。"
             "只输出当前 section 的正文内容，不要输出 JSON，不要输出当前 section 之外的内容。"
+            "使用纯中文正文，不要使用 Markdown：不得输出 #、*、**、```，也不要用 - 或 * 作为列表前缀。"
             f"section_key={section_key}"
             f"section_title={GUIDANCE_SECTION_TITLES[section_key]}"
             f"section_requirement={_SECTION_REQUIREMENTS[section_key]}"
@@ -205,12 +207,21 @@ class GuidanceAgent:
     @staticmethod
     def _as_text(value: GuidanceSectionValue) -> str:
         if isinstance(value, list):
-            return "".join(item.strip() for item in value if item.strip())
-        return value.strip()
+            return "".join(GuidanceAgent.clean_section_text(item) for item in value if item.strip())
+        return GuidanceAgent.clean_section_text(value)
 
     @staticmethod
     def _as_list(value: GuidanceSectionValue) -> list[str]:
         if isinstance(value, list):
-            return [item.strip() for item in value if item.strip()]
-        text = value.strip()
+            return [GuidanceAgent.clean_section_text(item) for item in value if item.strip()]
+        text = GuidanceAgent.clean_section_text(value)
         return [text] if text else []
+
+    @staticmethod
+    def clean_section_text(value: str, *, trim: bool = True) -> str:
+        """Keep guidance as plain text because the UI already supplies headings and lists."""
+        text = str(value or "")
+        text = re.sub(r"(?m)^[ \t]*#{1,6}[ \t]*", "", text)
+        text = re.sub(r"(?m)^[ \t]*[-+][ \t]+", "", text)
+        text = text.replace("**", "").replace("__", "").replace("`", "").replace("*", "")
+        return text.strip() if trim else text

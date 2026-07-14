@@ -157,6 +157,14 @@ def test_guidance_prompt_merges_values_and_culture_without_legacy_setup(monkeypa
     assert '"difficulty":' not in prompt
 
 
+def test_guidance_plain_text_cleanup_removes_markdown_markers():
+    text = GuidanceAgent.clean_section_text(
+        "### 沟通目标\n\n- **先对齐事实**，再确认下一步。\n\n`不要承诺`"
+    )
+
+    assert text == "沟通目标\n\n先对齐事实，再确认下一步。\n\n不要承诺"
+
+
 def test_company_values_loader_normalizes_and_is_safe_when_disabled(tmp_path):
     (tmp_path / "company_values.yaml").write_text(
         """

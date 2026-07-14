@@ -21,6 +21,12 @@ _REQUIRED_TASK_IDS = {
     "performance_evaluation",
     "redline_check",
 }
+_TASK_ORDER = (
+    "rubric_evaluation",
+    "emotion_evaluation",
+    "performance_evaluation",
+    "redline_check",
+)
 
 _DYNAMIC_EMOTION_STATE_FIELDS = {
     "current_attitude",
@@ -66,12 +72,26 @@ class CoachOrchestrator:
         chunks = retrieved_chunks_by_task or {}
         return list(
             await asyncio.gather(
-                self.rubric.evaluate(state, retrieved_chunks=chunks.get("rubric_evaluation", [])),
-                self.emotion.evaluate(state, retrieved_chunks=chunks.get("emotion_evaluation", [])),
-                self.performance.evaluate(state, retrieved_chunks=chunks.get("performance_evaluation", [])),
-                self.redline.evaluate(state, retrieved_chunks=chunks.get("redline_check", [])),
+                *(self.run_task(task_id, state, chunks.get(task_id, [])) for task_id in _TASK_ORDER),
             )
         )
+
+    async def run_task(
+        self,
+        task_id: str,
+        state: SessionState,
+        retrieved_chunks: list[RetrievedChunk] | None = None,
+    ) -> CoachTaskResult:
+        chunks = retrieved_chunks or []
+        if task_id == "rubric_evaluation":
+            return await self.rubric.evaluate(state, retrieved_chunks=chunks)
+        if task_id == "emotion_evaluation":
+            return await self.emotion.evaluate(state, retrieved_chunks=chunks)
+        if task_id == "performance_evaluation":
+            return await self.performance.evaluate(state, retrieved_chunks=chunks)
+        if task_id == "redline_check":
+            return await self.redline.evaluate(state, retrieved_chunks=chunks)
+        raise ValueError(f"Unknown Coach task_id: {task_id}")
 
     async def finalize_report(
         self,
@@ -82,19 +102,37 @@ class CoachOrchestrator:
         failed_tasks = [result.task_name for result in results if result.status == "failed"]
         if failed_tasks:
             raise LLMError(f"Coach LLM subtasks failed: {', '.join(failed_tasks)}")
-        report = await self.report_generator.generate(
+        report = await self.report_generator.generate(state.session_id, results, **self.report_context(state, chunks))
+        return self._normalize_report_status(report, results)
+
+    def report_context(
+        self,
+        state: SessionState,
+        chunks: dict[str, list[RetrievedChunk]] | None = None,
+    ) -> dict:
+        return {
+            "retrieved_chunks": (chunks or {}).get("report_generator", []),
+            "profile": state.employee_profile.model_dump(exclude_none=True) if state.employee_profile else {},
+            "intent": state.intent.model_dump(mode="json", exclude_none=True) if state.intent else {},
+            "personality": state.personality.model_dump(mode="json", exclude_none=True) if state.personality else {},
+            "motivation": state.motivation.model_dump(mode="json", exclude_none=True) if state.motivation else {},
+            "emotion_state": self._report_emotion_state(state),
+            "conversation": [turn.model_dump(mode="json", exclude_none=True) for turn in state.conversation],
+            "emotion_log": [item.model_dump(mode="json", exclude_none=True) for item in state.emotion_log],
+        }
+
+    def report_from_sections(
+        self,
+        state: SessionState,
+        results: list[CoachTaskResult],
+        sections: dict,
+        chunks: dict[str, list[RetrievedChunk]] | None = None,
+    ) -> CoachReport:
+        report = self.report_generator.report_from_sections(
             state.session_id,
             results,
-            retrieved_chunks=self._merge_chunks(chunks or {}),
-            profile=state.employee_profile.model_dump(exclude_none=True) if state.employee_profile else {},
-            intent=state.intent.model_dump(mode="json", exclude_none=True) if state.intent else {},
-            persona=state.persona.model_dump(mode="json", exclude_none=True) if state.persona else {},
-            difficulty=state.difficulty.model_dump(mode="json", exclude_none=True) if state.difficulty else {},
-            personality=state.personality.model_dump(mode="json", exclude_none=True) if state.personality else {},
-            motivation=state.motivation.model_dump(mode="json", exclude_none=True) if state.motivation else {},
-            emotion_state=self._report_emotion_state(state),
-            conversation=[turn.model_dump(mode="json", exclude_none=True) for turn in state.conversation],
-            emotion_log=[item.model_dump(mode="json", exclude_none=True) for item in state.emotion_log],
+            sections,
+            retrieved_chunks=(chunks or {}).get("report_generator", []),
         )
         return self._normalize_report_status(report, results)
 

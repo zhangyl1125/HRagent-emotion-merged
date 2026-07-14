@@ -9,6 +9,7 @@ from typing import Any
 from backend.agents.guidance_agent import (
     GUIDANCE_SECTION_KEYS,
     GUIDANCE_SECTION_TITLES,
+    GuidanceAgent,
     GuidanceSectionKey,
     GuidanceSectionValue,
     _supplemental_info_excerpt,
@@ -311,8 +312,20 @@ class GuidanceService:
         payload = self.cache.get_json(cache_key)
         if not payload:
             return None
-        report = GuidanceReport.model_validate(payload)
-        return report.model_copy(update={"session_id": session_id})
+        report = GuidanceReport.model_validate(payload).model_copy(update={"session_id": session_id})
+        return self._clean_report_markup(report)
+
+    @staticmethod
+    def _clean_report_markup(report: GuidanceReport) -> GuidanceReport:
+        return report.model_copy(
+            update={
+                "purpose": GuidanceAgent.clean_section_text(report.purpose),
+                "opening_suggestion": GuidanceAgent.clean_section_text(report.opening_suggestion),
+                "risk_preview": [GuidanceAgent.clean_section_text(item) for item in report.risk_preview],
+                "response_strategies": [GuidanceAgent.clean_section_text(item) for item in report.response_strategies],
+                "safer_phrases": [GuidanceAgent.clean_section_text(item) for item in report.safer_phrases],
+            }
+        )
 
     def _cache_key(self, state: SessionState, chunks: list[RetrievedChunk]) -> str:
         digest = cache_digest(
@@ -383,4 +396,4 @@ class GuidanceService:
         return [text[index:index + chunk_size] for index in range(0, len(text), chunk_size)]
 
     def get(self, session_id: str) -> GuidanceReport:
-        return self.report_repo.get_guidance(session_id)
+        return self._clean_report_markup(self.report_repo.get_guidance(session_id))

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -52,24 +53,27 @@ class RetrievalService:
         metadata_filter.update(agent_cfg.get("metadata_filter") or {})
 
         rendered_queries: list[str] = []
-        candidates: list[RetrievedChunk] = []
         for template in templates:
             rendered = Template(str(template)).render(**context).strip()
-            if not rendered:
-                continue
-            rendered_queries.append(rendered)
-            for scope in scopes:
-                collection_name = self.settings.collection_name_for_scope(str(scope))
-                store = PGVectorClient(collection_name=collection_name)
-                scope_filter = {**metadata_filter, "scope": str(scope)}
-                try:
-                    candidates.extend(store.search(rendered, top_k=vector_top_k, metadata_filter=scope_filter))
-                except RuntimeError as exc:
-                    if "pgvector collection is empty" in str(exc):
-                        continue
-                    raise
+            if rendered:
+                rendered_queries.append(rendered)
         if not rendered_queries:
             raise ValueError(f"Rendered retrieval query is empty for agent: {agent_name}")
+
+        search_jobs = [(rendered, str(scope)) for rendered in rendered_queries for scope in scopes]
+        query_parallelism = self._worker_count(
+            len(search_jobs),
+            agent_cfg.get("query_parallelism") or defaults.get("query_parallelism"),
+            default=8,
+        )
+        candidates: list[RetrievedChunk] = []
+        with ThreadPoolExecutor(max_workers=query_parallelism) as executor:
+            futures = [
+                executor.submit(self._search_scope, rendered, scope, vector_top_k, metadata_filter)
+                for rendered, scope in search_jobs
+            ]
+            for future in as_completed(futures):
+                candidates.extend(future.result())
 
         merged: dict[str, RetrievedChunk] = {}
         for item in candidates:
@@ -81,8 +85,45 @@ class RetrievalService:
             return []
         query_for_rerank = "\n".join(rendered_queries)
         if rerank_enabled:
-            return self.reranker.rerank(merged_chunks, query=query_for_rerank, top_k=final_top_k)
+            rerank_parallelism = self._worker_count(
+                len(merged_chunks),
+                agent_cfg.get("rerank_parallelism") or defaults.get("rerank_parallelism"),
+                default=4,
+            )
+            return self.reranker.rerank(
+                merged_chunks,
+                query=query_for_rerank,
+                top_k=final_top_k,
+                parallelism=rerank_parallelism,
+            )
         return sorted(merged_chunks, key=lambda c: c.score, reverse=True)[:final_top_k]
+
+    def _search_scope(
+        self,
+        rendered_query: str,
+        scope: str,
+        vector_top_k: int,
+        metadata_filter: dict[str, Any],
+    ) -> list[RetrievedChunk]:
+        collection_name = self.settings.collection_name_for_scope(scope)
+        store = PGVectorClient(collection_name=collection_name)
+        scope_filter = {**metadata_filter, "scope": scope}
+        try:
+            return store.search(rendered_query, top_k=vector_top_k, metadata_filter=scope_filter)
+        except RuntimeError as exc:
+            if "pgvector collection is empty" in str(exc):
+                return []
+            raise
+
+    @staticmethod
+    def _worker_count(job_count: int, configured: object, default: int) -> int:
+        if job_count <= 0:
+            return 1
+        try:
+            requested = int(configured or default)
+        except (TypeError, ValueError):
+            requested = default
+        return max(1, min(job_count, max(1, requested)))
 
     def _available_scopes(self, configured_scopes: list[str]) -> list[str]:
         indexed_scopes = self._indexed_scopes()

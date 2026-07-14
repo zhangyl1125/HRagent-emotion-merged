@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from backend.config.settings import get_settings
+from backend.agents.coach_agent.report_generator import COACH_REPORT_SECTION_KEYS, COACH_REPORT_SECTION_TITLES
 from backend.exceptions.workflow_errors import WorkflowError
 from backend.repositories.report_repository import ReportRepository
 from backend.services.retrieval_service import RetrievalService
@@ -108,30 +109,128 @@ class CoachService:
             ("performance_evaluation", "绩效反馈质量评估"),
             ("redline_check", "话术红线检测"),
         )
-        for task_id, task_name in task_specs:
-            yield {"event": "task_start", "task_id": task_id, "task_name": task_name}
+        cached = await asyncio.to_thread(self._cached_report, session_id, state)
+        if cached is not None:
+            async for event in self._stream_cached_report(cached, state, task_specs):
+                yield event
+            return
 
-        report = await self.generate(session_id)
+        async with _report_lock(session_id):
+            state = await asyncio.to_thread(self.session_service.get_session, session_id)
+            cached = await asyncio.to_thread(self._cached_report, session_id, state)
+            if cached is not None:
+                async for event in self._stream_cached_report(cached, state, task_specs):
+                    yield event
+                return
+            cache_key = self._cache_key(state)
+            cached = await self._cached_content_report(cache_key, session_id)
+            if cached is not None:
+                await asyncio.to_thread(self._save_report_state, state, cached)
+                refreshed = await asyncio.to_thread(self.session_service.get_session, session_id)
+                async for event in self._stream_cached_report(cached, refreshed, task_specs):
+                    yield event
+                return
+
+            for task_id, task_name in task_specs:
+                yield {"event": "task_start", "task_id": task_id, "task_name": task_name}
+
+            context = self._report_retrieval_context(state)
+            retrieval_ids = (*[task_id for task_id, _task_name in task_specs], "report_generator")
+            retrieval_results = await asyncio.gather(
+                *(self._retrieve_task_chunks(session_id, task_id, context) for task_id in retrieval_ids)
+            )
+            chunks_by_task = {task_id: chunks for task_id, chunks, _warning in retrieval_results}
+            kb_warnings = [warning for _task_id, _chunks, warning in retrieval_results if warning]
+            orchestrator = self._coach_orchestrator()
+            gate = _report_generation_gate(self.settings.coach_report_max_concurrency_per_worker)
+            async with gate:
+                task_results: dict[str, object] = {}
+                pending_tasks = [
+                    asyncio.create_task(self._run_stream_task(orchestrator, task_id, task_name, state, chunks_by_task))
+                    for task_id, task_name in task_specs
+                ]
+                try:
+                    for completed in asyncio.as_completed(pending_tasks):
+                        task_id, task_name, result = await completed
+                        task_results[task_id] = result
+                        yield {
+                            "event": "task_done",
+                            "task_id": task_id,
+                            "task_name": task_name,
+                            "result": result.model_dump(mode="json"),
+                        }
+                finally:
+                    await self._cancel_pending_tasks(pending_tasks)
+
+                ordered_results = [task_results[task_id] for task_id, _task_name in task_specs]
+                report_context = orchestrator.report_context(state, chunks_by_task)
+
+                for key in COACH_REPORT_SECTION_KEYS:
+                    yield {"event": "section_start", "key": key, "title": COACH_REPORT_SECTION_TITLES[key]}
+                pending_sections = [
+                    asyncio.create_task(self._run_stream_section(orchestrator, state.session_id, ordered_results, key, report_context))
+                    for key in COACH_REPORT_SECTION_KEYS
+                ]
+                sections: dict = {}
+                try:
+                    for completed in asyncio.as_completed(pending_sections):
+                        key, section = await completed
+                        sections[key] = section
+                        title = COACH_REPORT_SECTION_TITLES[key]
+                        yield {
+                            "event": "section_delta",
+                            "key": key,
+                            "text": orchestrator.report_generator.section_display_text(key, section),
+                        }
+                        yield {"event": "section_done", "key": key, "title": title}
+                finally:
+                    await self._cancel_pending_tasks(pending_sections)
+
+                report = orchestrator.report_from_sections(state, ordered_results, sections, chunks_by_task)
+            await asyncio.to_thread(self._save_report_state, state, report, kb_warnings)
+            await self.cache.set_json_async(
+                cache_key,
+                report.model_dump(mode="json"),
+                self.settings.guidance_cache_ttl_seconds,
+            )
+            refreshed = await asyncio.to_thread(self.session_service.get_session, session_id)
+            yield {
+                "event": "done",
+                "report": report.model_dump(mode="json"),
+                "state": refreshed.model_dump(mode="json"),
+            }
+
+    async def _stream_cached_report(self, report: CoachReport, state, task_specs: tuple[tuple[str, str], ...]) -> AsyncIterator[dict]:
         results_by_task = {result.task_id: result for result in report.task_results}
         for task_id, task_name in task_specs:
             result = results_by_task.get(task_id)
             if result is None:
                 raise WorkflowError(f"CoachReport 缺少大模型评估结果：{task_id}")
-            yield {
-                "event": "task_done",
-                "task_id": task_id,
-                "task_name": task_name,
-                "result": result.model_dump(mode="json"),
-            }
-
-        refreshed = await asyncio.to_thread(self.session_service.get_session, session_id)
+            yield {"event": "task_start", "task_id": task_id, "task_name": task_name}
+            yield {"event": "task_done", "task_id": task_id, "task_name": task_name, "result": result.model_dump(mode="json")}
         async for event in self._stream_report_sections(report):
             yield event
-        yield {
-            "event": "done",
-            "report": report.model_dump(mode="json"),
-            "state": refreshed.model_dump(mode="json"),
-        }
+        yield {"event": "done", "report": report.model_dump(mode="json"), "state": state.model_dump(mode="json")}
+
+    @staticmethod
+    async def _run_stream_task(orchestrator, task_id: str, task_name: str, state, chunks_by_task: dict):
+        result = await orchestrator.run_task(task_id, state, chunks_by_task.get(task_id, []))
+        return task_id, task_name, result
+
+    @staticmethod
+    async def _run_stream_section(orchestrator, session_id: str, task_results: list, key: str, report_context: dict):
+        section = await orchestrator.report_generator.generate_section(session_id, task_results, key, **report_context)
+        return key, section
+
+    def _coach_orchestrator(self):
+        return getattr(self.orchestrator, "orchestrator", self.orchestrator)
+
+    @staticmethod
+    async def _cancel_pending_tasks(tasks: list[asyncio.Task]) -> None:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _stream_report_sections(self, report: CoachReport) -> AsyncIterator[dict]:
         sections = [
@@ -222,18 +321,7 @@ class CoachService:
     async def _generate_uncached(self, session_id: str, state) -> CoachReport:
         if len([turn for turn in state.conversation if turn.speaker == "manager"]) == 0:
             raise WorkflowError("缺少预演对话，无法生成 CoachReport。")
-        context = {
-            "intent": state.intent.config if state.intent else {},
-            "profile": state.employee_profile,
-            "persona": state.persona,
-            "difficulty": state.difficulty,
-            "personality": _semantic_payload(state.personality),
-            "motivation": _semantic_payload(state.motivation),
-            "emotion_state": _semantic_payload(state.emotion_state),
-            "emotion_log": _semantic_payload(state.emotion_log),
-            "conversation": state.conversation,
-            "run_mode": state.run_mode,
-        }
+        context = self._report_retrieval_context(state)
         task_ids = (
             "rubric_evaluation",
             "emotion_evaluation",
@@ -251,6 +339,21 @@ class CoachService:
             report = await self.orchestrator.run(state, retrieved_chunks_by_task=chunks_by_task)
         await asyncio.to_thread(self._save_report_state, state, report, kb_warnings)
         return report
+
+    @staticmethod
+    def _report_retrieval_context(state) -> dict:
+        return {
+            "intent": state.intent.config if state.intent else {},
+            "profile": state.employee_profile,
+            "persona": state.persona,
+            "difficulty": state.difficulty,
+            "personality": _semantic_payload(state.personality),
+            "motivation": _semantic_payload(state.motivation),
+            "emotion_state": _semantic_payload(state.emotion_state),
+            "emotion_log": _semantic_payload(state.emotion_log),
+            "conversation": state.conversation,
+            "run_mode": state.run_mode,
+        }
 
     def _cache_key(self, state) -> str:
         digest = cache_digest({

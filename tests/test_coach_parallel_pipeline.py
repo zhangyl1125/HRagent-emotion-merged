@@ -3,7 +3,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from backend.agents.coach_agent.generic_agent import GenericCoachAgent
 from backend.agents.coach_agent.coach_orchestrator import CoachOrchestrator
+from backend.agents.coach_agent.report_generator import COACH_REPORT_SECTION_KEYS, ReportGenerator
 from backend.schemas.coach import CoachReport
 from backend.schemas.conversation import ConversationTurn
 from backend.schemas.emotion import ConversationEmotionLog, EmotionState, EmployeeAttitude
@@ -20,6 +22,68 @@ _TASK_SPECS = (
     ("performance_evaluation", "绩效反馈质量评估"),
     ("redline_check", "话术红线检测"),
 )
+
+
+@pytest.mark.asyncio
+async def test_report_generator_starts_five_sections_in_parallel(monkeypatch):
+    generator = ReportGenerator()
+    started: set[str] = set()
+    all_started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def generate_section(session_id, task_results, section_key, **kwargs):
+        assert session_id == "parallel-sections"
+        assert task_results
+        started.add(section_key)
+        if len(started) == len(COACH_REPORT_SECTION_KEYS):
+            all_started.set()
+        await release.wait()
+        return section_key
+
+    monkeypatch.setattr(generator, "generate_section", generate_section)
+    pending = asyncio.create_task(
+        generator.generate_sections(
+            "parallel-sections",
+            [CoachTaskResult(task_id="rubric_evaluation", task_name="Rubric 综合评估", summary="ok")],
+        )
+    )
+    try:
+        await asyncio.wait_for(all_started.wait(), timeout=1)
+        assert not pending.done()
+    finally:
+        release.set()
+
+    assert await asyncio.wait_for(pending, timeout=1) == {
+        key: key for key in COACH_REPORT_SECTION_KEYS
+    }
+
+
+@pytest.mark.asyncio
+async def test_coach_evaluator_uses_emotion_source_json_text_call(monkeypatch):
+    captured: dict = {}
+
+    class PromptService:
+        @staticmethod
+        def render(_template, **_kwargs):
+            return "prompt"
+
+    class LLM:
+        async def ainvoke_text(self, **kwargs):
+            captured.update(kwargs)
+            return '{"task_id":"rubric_evaluation","task_name":"Rubric 综合评估","summary":"ok"}'
+
+    monkeypatch.setattr("backend.agents.coach_agent.generic_agent.PromptService", PromptService)
+    monkeypatch.setattr("backend.agents.coach_agent.generic_agent.LangChainLLMService", LLM)
+
+    await GenericCoachAgent().run_llm_task(
+        task_id="rubric_evaluation",
+        task_name="Rubric 综合评估",
+        prompt_template="coach/rubric.jinja2",
+        task_model_name="coach_evaluator",
+    )
+
+    assert captured["task_name"] == "coach_evaluator"
+    assert "只输出 CoachTaskResult JSON object" in captured["prompt"]
 
 
 def _state() -> SessionState:
