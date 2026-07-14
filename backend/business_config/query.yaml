@@ -3,7 +3,8 @@ name: rag_retrieval_queries
 retrieval_policy:
   entry_service: RetrievalService
   agent_direct_vectorstore_access: forbidden
-  employee_agent_kb_access: forbidden
+  employee_agent_kb_access: via_retrieval_service
+  note: EmployeeAgent 只把检索结果作为员工视角背景，不得以 HR、制度或政策专家口吻引用。
 
 defaults:
   vector_top_k: 20
@@ -18,15 +19,37 @@ defaults:
     - examples
 
 queries:
+  employee_response:
+    enabled: true
+    vector_top_k: 8
+    rerank_enabled: true
+    rerank_top_n: 4
+    scopes: [employee, emotion, performance]
+    query_templates:
+      - "{{ profile.conversation_topic if profile else '' }} {{ latest_manager_message }} 员工视角 绩效沟通 背景"
+      - "{{ motivation.primary_motive_id if motivation else '' }} {{ emotion_state.current_anchor_id if emotion_state else '' }} 员工反应 沟通语境 关注点"
+
   guidance:
     enabled: true
     vector_top_k: 20
     rerank_enabled: true
-    rerank_top_n: 5
-    scopes: [general, policy, performance, emotion, examples]
+    rerank_top_n: 8
+    scopes: [general, policy, development_dialog, performance, emotion, examples, job_level]
     query_templates:
-      - "{{ intent.name }} 绩效谈话 指导 风险 应对策略"
-      - "{{ persona.name if persona else '' }} 员工反应 情绪承接 话术"
+      - "{{ intent.name if intent else '' }} {{ profile.conversation_topic if profile else '' }} 绩效谈话 开场 事实 目标 支持 跟进 指导"
+      - "{{ motivation.primary_motive_id if motivation else '' }} {{ emotion_state.current_anchor_id if emotion_state else '' }} 员工反应 防御 焦虑 沉默 质疑 情绪承接 话术"
+      - "绩效反馈 development dialogue quick feedback 倾听 标注 镜像 校准型问题 行动计划"
+      - "{{ profile.role if profile else '' }} {{ intent.name if intent else '' }} 风险提示 红线表达 越权承诺 无证据定性"
+
+  guidance_culture:
+    enabled: true
+    vector_top_k: 8
+    rerank_enabled: true
+    rerank_top_n: 4
+    scopes: [culture]
+    query_templates:
+      - "{{ company_value_terms if company_value_terms else '' }} {{ intent.name if intent else '' }} {{ profile.conversation_topic if profile else '' }} 企业价值观 管理者行为 绩效沟通 应用"
+      - "{{ company_value_terms if company_value_terms else '' }} {{ profile.role if profile else '' }} 价值观 可观察行为 反面行为 困难对话"
 
   rubric_evaluation:
     enabled: true

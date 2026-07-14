@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable
 
 from backend.agents.coach_agent.emotion_evaluator import EmotionEvaluator
@@ -21,6 +22,22 @@ _REQUIRED_TASK_IDS = {
     "redline_check",
 }
 
+_DYNAMIC_EMOTION_STATE_FIELDS = {
+    "current_attitude",
+    "previous_attitude",
+    "intensity",
+    "transition_reason",
+    "emotion_band",
+    "emotion_description",
+    "turn_index",
+    "current_vad",
+    "current_anchor_id",
+    "transition_strategy",
+    "last_reason_summary",
+    "reply_emotion_guidance",
+    "has_manager_response",
+}
+
 
 class CoachOrchestrator:
     """Coordinate LLM-only Coach report generation."""
@@ -37,21 +54,24 @@ class CoachOrchestrator:
         state: SessionState,
         retrieved_chunks_by_task: dict[str, list[RetrievedChunk]] | None = None,
     ) -> CoachReport:
-        report = await self.report_generator.generate(
-            state.session_id,
-            [],
-            retrieved_chunks=self._merge_chunks(retrieved_chunks_by_task or {}),
-            profile=state.employee_profile.model_dump(exclude_none=True) if state.employee_profile else {},
-            intent=state.intent.model_dump(mode="json", exclude_none=True) if state.intent else {},
-            persona=state.persona.model_dump(mode="json", exclude_none=True) if state.persona else {},
-            difficulty=state.difficulty.model_dump(mode="json", exclude_none=True) if state.difficulty else {},
-            personality=state.personality.model_dump(mode="json", exclude_none=True) if state.personality else {},
-            motivation=state.motivation.model_dump(mode="json", exclude_none=True) if state.motivation else {},
-            emotion_state=state.emotion_state.model_dump(mode="json", exclude_none=True) if state.emotion_state else {},
-            conversation=[turn.model_dump(mode="json", exclude_none=True) for turn in state.conversation],
-            emotion_log=[item.model_dump(mode="json", exclude_none=True) for item in state.emotion_log],
+        chunks = retrieved_chunks_by_task or {}
+        results = await self.run_tasks(state, chunks)
+        return await self.finalize_report(state, results, chunks)
+
+    async def run_tasks(
+        self,
+        state: SessionState,
+        retrieved_chunks_by_task: dict[str, list[RetrievedChunk]] | None = None,
+    ) -> list[CoachTaskResult]:
+        chunks = retrieved_chunks_by_task or {}
+        return list(
+            await asyncio.gather(
+                self.rubric.evaluate(state, retrieved_chunks=chunks.get("rubric_evaluation", [])),
+                self.emotion.evaluate(state, retrieved_chunks=chunks.get("emotion_evaluation", [])),
+                self.performance.evaluate(state, retrieved_chunks=chunks.get("performance_evaluation", [])),
+                self.redline.evaluate(state, retrieved_chunks=chunks.get("redline_check", [])),
+            )
         )
-        return self._validate_full_report(report)
 
     async def finalize_report(
         self,
@@ -72,11 +92,24 @@ class CoachOrchestrator:
             difficulty=state.difficulty.model_dump(mode="json", exclude_none=True) if state.difficulty else {},
             personality=state.personality.model_dump(mode="json", exclude_none=True) if state.personality else {},
             motivation=state.motivation.model_dump(mode="json", exclude_none=True) if state.motivation else {},
-            emotion_state=state.emotion_state.model_dump(mode="json", exclude_none=True) if state.emotion_state else {},
+            emotion_state=self._report_emotion_state(state),
             conversation=[turn.model_dump(mode="json", exclude_none=True) for turn in state.conversation],
             emotion_log=[item.model_dump(mode="json", exclude_none=True) for item in state.emotion_log],
         )
         return self._normalize_report_status(report, results)
+
+    @staticmethod
+    def _report_emotion_state(state: SessionState) -> dict:
+        if not state.emotion_state:
+            return {}
+        payload = state.emotion_state.model_dump(mode="json", exclude_none=True)
+        if state.motivation is None:
+            return payload
+        return {
+            key: value
+            for key, value in payload.items()
+            if key in _DYNAMIC_EMOTION_STATE_FIELDS
+        }
 
     @staticmethod
     async def _safe_evaluate(

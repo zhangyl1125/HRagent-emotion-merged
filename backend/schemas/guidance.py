@@ -7,6 +7,10 @@ from backend.schemas.retrieval import Citation
 class GuidanceReport(BaseModel):
     session_id: str
     intent_id: str
+    culture_version: str | None = None
+    primary_motive_id: str | None = None
+    secondary_motive_ids: list[str] = Field(default_factory=list)
+    # Kept only for backward-compatible report serialization; guidance prompts no longer use them.
     persona_id: str | None = None
     difficulty_id: str | None = None
     purpose: str

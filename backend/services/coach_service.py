@@ -210,7 +210,10 @@ class CoachService:
             and all(not result.extra.get("local_fallback") for result in report.task_results)
         )
 
-    def _save_report_state(self, state, report: CoachReport) -> None:
+    def _save_report_state(self, state, report: CoachReport, kb_warnings: list[str] | None = None) -> None:
+        for warning in kb_warnings or []:
+            if warning not in state.warnings:
+                state.warnings.append(warning)
         self.report_repo.save_coach(report)
         state.coach_report_id = state.session_id
         state.stage = "report_ready"
@@ -231,15 +234,22 @@ class CoachService:
             "conversation": state.conversation,
             "run_mode": state.run_mode,
         }
-        task_ids = ("redline_check", "report_generator")
+        task_ids = (
+            "rubric_evaluation",
+            "emotion_evaluation",
+            "performance_evaluation",
+            "redline_check",
+            "report_generator",
+        )
         retrieval_results = await asyncio.gather(
             *(self._retrieve_task_chunks(session_id, task_id, context) for task_id in task_ids)
         )
         chunks_by_task = {task_id: chunks for task_id, chunks, _warning in retrieval_results}
+        kb_warnings = [warning for _task_id, _chunks, warning in retrieval_results if warning]
         gate = _report_generation_gate(self.settings.coach_report_max_concurrency_per_worker)
         async with gate:
             report = await self.orchestrator.run(state, retrieved_chunks_by_task=chunks_by_task)
-        await asyncio.to_thread(self._save_report_state, state, report)
+        await asyncio.to_thread(self._save_report_state, state, report, kb_warnings)
         return report
 
     def _cache_key(self, state) -> str:
@@ -295,10 +305,14 @@ class CoachService:
         session_id: str,
         task_id: str,
         context: dict,
-    ) -> tuple[str, list[RetrievedChunk], None]:
-        chunks = await asyncio.to_thread(self.retrieval.retrieve, task_id, context)
+    ) -> tuple[str, list[RetrievedChunk], str | None]:
+        try:
+            chunks = await asyncio.to_thread(self.retrieval.retrieve, task_id, context)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Coach retrieval failed for session_id=%s task_id=%s", session_id, task_id)
+            return task_id, [], f"Coach KB 检索 {task_id} 失败，已基于对话和本地规则继续生成：{exc}"
         if not chunks:
-            raise WorkflowError(f"Coach KB 未检索到 {task_id} 所需知识片段，无法生成复盘报告。")
+            return task_id, [], f"Coach KB 未检索到 {task_id} 所需知识片段，已基于对话和本地规则继续生成。"
         logger.debug(
             "Coach retrieval completed session_id=%s task_id=%s chunks=%s",
             session_id,

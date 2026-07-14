@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from backend.agents.guidance_agent import GuidanceAgent
+from backend.agents.guidance_agent import (
+    GuidanceAgent,
+    GuidanceSectionKey,
+    GuidanceSectionValue,
+)
 from backend.schemas.guidance import GuidanceReport
 from backend.schemas.retrieval import RetrievedChunk
 from backend.schemas.state import SessionState
@@ -23,10 +27,8 @@ class GuidanceWorkflow:
     """LangGraph-backed guidance workflow.
 
     The non-streaming path is decomposed into ``validate_intent`` -> ``generate``
-    nodes. Both nodes call the existing :class:`GuidanceAgent`, so the LLM call,
-    structured-output parsing and local fallback behaviour are unchanged. The
-    streaming path is exposed verbatim through :meth:`stream_text` /
-    :meth:`report_from_stream_sections` so callers keep identical SSE behaviour.
+    nodes. ``GuidanceAgent.generate`` runs the five guidance sections in parallel.
+    Streaming callers use the same per-section prompt through ``stream_section``.
     """
 
     def __init__(self) -> None:
@@ -56,14 +58,18 @@ class GuidanceWorkflow:
         report = await self.agent.generate(graph_state["state"], graph_state["chunks"])
         return {"report": report}
 
-    # --- Streaming passthrough (behaviour identical to GuidanceAgent) ---------
-    def stream_text(self, state: SessionState, chunks: list[RetrievedChunk]) -> AsyncIterator[str]:
-        return self.agent.stream_text(state, chunks)
-
-    def report_from_stream_sections(
+    def stream_section(
         self,
         state: SessionState,
         chunks: list[RetrievedChunk],
-        sections: dict[str, str],
+        key: GuidanceSectionKey,
+    ) -> AsyncIterator[str]:
+        return self.agent.stream_section(state, chunks, key)
+
+    def report_from_sections(
+        self,
+        state: SessionState,
+        chunks: list[RetrievedChunk],
+        sections: Mapping[GuidanceSectionKey, GuidanceSectionValue],
     ) -> GuidanceReport:
-        return self.agent.report_from_stream_sections(state, chunks, sections)
+        return self.agent.report_from_sections(state, chunks, sections)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -78,6 +79,69 @@ class BusinessConfigLoader:
 
     def query_config(self) -> dict[str, Any]:
         return self.load_yaml("query.yaml")
+
+    @lru_cache(maxsize=1)
+    def _company_values_cached(self) -> dict[str, Any]:
+        data = self.load_yaml("company_values.yaml")
+        version = str(data.get("version") or "").strip()
+        if not version:
+            raise ValueError("company_values.yaml requires a non-empty version")
+
+        raw_values = data.get("values") or []
+        if not isinstance(raw_values, list):
+            raise ValueError("company_values.yaml values must be a list")
+
+        values: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        for index, raw_value in enumerate(raw_values):
+            if not isinstance(raw_value, dict):
+                raise ValueError(f"company_values.yaml values[{index}] must be a mapping")
+            value_id = str(raw_value.get("id") or "").strip()
+            name = str(raw_value.get("name") or "").strip()
+            definition = str(raw_value.get("definition") or "").strip()
+            if not value_id or not name or not definition:
+                raise ValueError(
+                    f"company_values.yaml values[{index}] requires id, name, and definition"
+                )
+            if value_id in seen_ids:
+                raise ValueError(f"Duplicate company value id: {value_id}")
+            seen_ids.add(value_id)
+
+            normalized = dict(raw_value)
+            normalized.update({"id": value_id, "name": name, "definition": definition})
+            for field in ("desired_behaviors", "anti_patterns", "manager_applications", "source_refs"):
+                raw_items = normalized.get(field) or []
+                if not isinstance(raw_items, list):
+                    raise ValueError(
+                        f"company_values.yaml values[{index}].{field} must be a list"
+                    )
+                normalized[field] = [str(item).strip() for item in raw_items if str(item).strip()]
+            values.append(normalized)
+
+        enabled = bool(data.get("enabled", False))
+        if enabled and not values:
+            raise ValueError("company_values.yaml cannot be enabled without values")
+
+        normalized_data = dict(data)
+        normalized_data.update({"version": version, "enabled": enabled, "values": values})
+        return normalized_data
+
+    def company_values(self) -> dict[str, Any]:
+        return deepcopy(self._company_values_cached())
+
+    def company_values_enabled(self) -> bool:
+        config = self._company_values_cached()
+        return bool(config.get("enabled") and config.get("values"))
+
+    def company_value_terms(self) -> str:
+        config = self._company_values_cached()
+        if not config.get("enabled") or not config.get("values"):
+            return ""
+        return " ".join(str(value["name"]) for value in config.get("values", []))
+
+    def culture_version(self) -> str | None:
+        config = self._company_values_cached()
+        return str(config["version"]) if config.get("enabled") and config.get("values") else None
 
     def coach_config(self, filename: str) -> dict[str, Any]:
         return self.load_yaml(f"coach/{filename}")

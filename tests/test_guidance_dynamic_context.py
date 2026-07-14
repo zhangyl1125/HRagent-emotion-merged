@@ -1,6 +1,9 @@
-from backend.agents.guidance_agent import GuidanceAgent
+import json
+
+from backend.agents.guidance_agent import GUIDANCE_SECTION_KEYS, GuidanceAgent
 from backend.schemas.emotion import ConversationEmotionLog, EmotionState, EmployeeAttitude
 from backend.schemas.intent import IntentConfig, IntentResult
+from backend.schemas.profile import EmployeeProfile
 from backend.schemas.simulation import BigFivePersonality, MotivationState, VADVector
 from backend.schemas.state import SessionState
 
@@ -53,7 +56,7 @@ def _dynamic_state() -> SessionState:
 
 
 def test_guidance_prompt_includes_dynamic_personality_motivation_and_vad_log():
-    prompt = GuidanceAgent._build_prompt(_dynamic_state(), [])
+    prompt = GuidanceAgent._build_section_prompt(_dynamic_state(), [], "purpose")
 
     assert '"primary_motive_id": "security"' in prompt
     assert '"current_vad"' in prompt
@@ -61,13 +64,72 @@ def test_guidance_prompt_includes_dynamic_personality_motivation_and_vad_log():
     assert '"vad_after"' in prompt
     assert '"updated_at"' not in prompt
     assert "不得作为事实定性或心理诊断" in prompt
+    assert '"persona":' not in prompt
+    assert '"difficulty":' not in prompt
 
 
-def test_guidance_fallback_uses_motive_and_vad_without_personality_diagnosis():
-    report = GuidanceAgent._fallback_report(_dynamic_state(), [])
+def test_guidance_prompt_uses_existing_profile_text_as_supplemental_info():
+    state = _dynamic_state()
+    state.employee_profile = EmployeeProfile(
+        employee_alias="员工A",
+        source_profile_text="上传资料中的补充事实与历史反馈。",
+    )
 
-    assert any("稳定与确定性" in item for item in report.risk_preview)
-    assert any("Big Five" in item for item in report.risk_preview)
-    assert any("VAD" in item for item in report.risk_preview)
-    assert any("稳定与确定性" in item for item in report.safer_phrases)
-    assert any("不把人格参数当作绩效事实" in item for item in report.response_strategies)
+    prompt = GuidanceAgent._build_section_prompt(state, [], "opening_suggestion")
+
+    assert '"supplemental_info": "上传资料中的补充事实与历史反馈。"' in prompt
+
+
+def _guidance_context(state: SessionState, section_key: str) -> dict:
+    prompt = GuidanceAgent._build_section_prompt(state, [], section_key)
+    return json.loads(prompt.split("context=", 1)[1])
+
+
+def test_dynamic_guidance_sections_exclude_legacy_emotion_satisfaction_payload():
+    state = _dynamic_state()
+    state.emotion_state = EmotionState(
+        interview_purpose="retention",
+        primary_motivation="commerce",
+        secondary_motivation="power",
+        primary_satisfaction=17,
+        secondary_satisfaction=29,
+        total_satisfaction=21,
+        last_primary_delta=-3,
+        last_secondary_delta=2,
+        current_vad=VADVector(valence=-0.2, arousal=0.4, dominance=-0.1),
+        current_anchor_id="guarded",
+    )
+    expected_fields = {
+        "current_vad",
+        "current_anchor_id",
+        "transition_strategy",
+        "last_reason_summary",
+        "reply_emotion_guidance",
+        "has_manager_response",
+    }
+
+    for section_key in GUIDANCE_SECTION_KEYS:
+        context = _guidance_context(state, section_key)
+        assert set(context["emotion_state"]) == expected_fields
+
+
+def test_legacy_guidance_keeps_complete_emotion_payload():
+    state = _dynamic_state()
+    state.motivation = None
+    state.emotion_state = EmotionState(
+        interview_purpose="retention",
+        primary_motivation="commerce",
+        secondary_motivation="power",
+        primary_satisfaction=17,
+        secondary_satisfaction=29,
+        total_satisfaction=21,
+        last_primary_delta=-3,
+        last_secondary_delta=2,
+        current_vad=VADVector(valence=-0.2, arousal=0.4, dominance=-0.1),
+    )
+
+    context = _guidance_context(state, "purpose")
+    expected = state.emotion_state.model_dump(mode="json", exclude_none=True)
+    expected.pop("updated_at")
+
+    assert context["emotion_state"] == expected

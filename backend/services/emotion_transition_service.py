@@ -106,10 +106,7 @@ class EmotionTransitionService:
         context = {
             "intent": state.intent.model_dump(exclude_none=True) if state.intent else {},
             "personality": state.personality.model_dump() if state.personality else {},
-            "emotion_state": (
-                state.emotion_state.model_dump(mode="json")
-                if state.emotion_state else {}
-            ),
+            "emotion_state": self._emotion_prompt_payload(state),
             "emotion_anchors": [
                 anchor.model_dump(mode="json")
                 for anchor in get_config_loader().emotion_anchors().values()
@@ -128,6 +125,26 @@ class EmotionTransitionService:
             "员工回复的情绪表达指导和简短理由，只返回结构化结果。"
             f"context={json.dumps(context, ensure_ascii=False)}"
         )
+
+    @staticmethod
+    def _emotion_prompt_payload(state: SessionState) -> dict:
+        if not state.emotion_state:
+            return {}
+        payload = state.emotion_state.model_dump(mode="json")
+        if state.motivation is None:
+            return payload
+        for legacy_key in (
+            "interview_purpose",
+            "primary_motivation",
+            "secondary_motivation",
+            "primary_satisfaction",
+            "secondary_satisfaction",
+            "total_satisfaction",
+            "last_primary_delta",
+            "last_secondary_delta",
+        ):
+            payload.pop(legacy_key, None)
+        return payload
 
     @staticmethod
     def _fallback_transition(

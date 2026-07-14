@@ -6,6 +6,7 @@
 {% set motivation = motivation | default({}) %}
 {% set emotion_state = emotion_state | default({}) %}
 {% set rehearsal_context = rehearsal_context | default({}) %}
+{% set retrieved_chunks = retrieved_chunks | default([]) %}
 
 {% set employee_name = profile.get('name') or profile.get('employee_alias') or '员工' %}
 {% set employee_role = profile.get('role') or profile.get('position') or '员工' %}
@@ -98,6 +99,16 @@ Persona 人为调整：{{ persona_override }}
 当前员工态度动态：
 {% if emotion_prompt %}
 {{ emotion_prompt }}
+{% else %}
+无。
+{% endif %}
+
+员工回复背景知识库（仅用于员工视角的背景语境）：
+{% if retrieved_chunks %}
+这些材料只帮助你理解绩效沟通语境和员工可能关注点。不得以 HR、公司制度或政策专家口吻引用，也不得替经理、HR 或公司下结论。
+{% for chunk in retrieved_chunks %}
+* {{ chunk.get('title') or chunk.get('source_id') }}：{{ (chunk.get('text') or '')[:700] }}
+{% endfor %}
 {% else %}
 无。
 {% endif %}

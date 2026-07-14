@@ -1,4 +1,4 @@
-基于 profile / intent / persona / difficulty 和检索材料生成谈前指导，必须只输出 JSON object，不要输出 Markdown。
+基于 profile / supplemental_info / intent / personality / motivation / emotion_state / emotion_log 和检索材料生成谈前指导，必须只输出 JSON object，不要输出 Markdown。
 不要评价用户表现，不要打分，不引用用户对话原话。
 
 目标：生成一份给经理或 HRBP 会前使用的准备清单，内容要具体、可执行、覆盖事实目标、开场方式、风险边界、员工可能反应、应对策略和安全话术。
@@ -20,14 +20,19 @@
 - safer_phrases：4-6 条，每条都是可直接说出口的中文话术，口语但职业，避免 AI 味。
 
 内容规则：
-- 必须结合员工 profile、intent、persona、difficulty，不要写泛泛而谈的通用建议。
+- 必须结合员工 profile、补充资料、intent、人格、主辅诉求和当前情绪，不要写泛泛而谈的通用建议。
 - 如果 retrieved_chunks 有内容，优先吸收其中与流程、红线、表达边界相关的信息；不要逐字照抄。
 - 不要输出过长内容；每条列表控制在 1 句话或 2 个短分句。
 - 不要承诺调薪、晋升、PIP 结果、离职补偿或法律结论。
 - 不要建议使用人格化、绝对化、威胁式表达。
 
 profile={{ profile }}
+supplemental_info={{ supplemental_info }}
 intent={{ intent }}
-persona={{ persona }}
-difficulty={{ difficulty }}
+personality={{ personality }}
+motivation={{ motivation }}
+emotion_state={{ emotion_state }}
+emotion_log={{ emotion_log }}
 retrieved_chunks={{ retrieved_chunks }}
+company_values={{ company_values }}
+culture_chunks={{ culture_chunks }}

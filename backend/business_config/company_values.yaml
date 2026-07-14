@@ -1,0 +1,129 @@
+# company_values
+version: v0.1
+name: company_values
+enabled: false
+company_name: "Bosch"
+values:
+  - id: future_result_focus
+    name: "Future and result focus"
+    definition: "Focus on long - term goals and deliver results that align with the company's strategic direction, ensuring innovations are relevant to customers and contribute to sustainable growth."
+    desired_behaviors:
+      - "Set ambitious objectives aligned with company strategy"
+      - "Prioritize tasks that drive long - term value"
+      - "Regularly review progress against strategic goals"
+    anti_patterns:
+      - "Focus only on short - term gains without considering long - term impact"
+      - "Ignore customer needs in favor of immediate results"
+      - "Fail to adapt to changing market conditions"
+    manager_applications:
+      - "Discuss how team members' work contributes to long - term strategic goals during performance reviews"
+      - "Encourage setting stretch goals that align with future - focused values"
+      - "Provide feedback on balancing short - term tasks with long - term objectives"
+    source_refs:
+      - "About Be LikeABosch.docx"
+  - id: initiative_determination
+    name: "Initiative and determination"
+    definition: "Take proactive steps to drive change, overcome challenges, and achieve goals with resilience and persistence."
+    desired_behaviors:
+      - "Identify opportunities for improvement and take initiative to address them"
+      - "Persist through difficulties and find alternative solutions"
+      - "Demonstrate determination in achieving challenging targets"
+    anti_patterns:
+      - "Wait for instructions before taking action"
+      - "Give up easily when faced with obstacles"
+      - "Avoid taking responsibility for solving problems"
+    manager_applications:
+      - "Recognize and reward proactive behavior in team members"
+      - "Discuss how determination was shown in overcoming challenges during performance discussions"
+      - "Encourage taking calculated risks to drive innovation"
+    source_refs:
+      - "About Be LikeABosch.docx"
+  - id: openness_trust
+    name: "Openness and trust"
+    definition: "Foster an environment of transparency, open communication, and mutual trust to enable collaboration and effective teamwork."
+    desired_behaviors:
+      - "Share information openly with colleagues and stakeholders"
+      - "Listen actively to others' ideas and perspectives"
+      - "Build trust through consistent and honest communication"
+    anti_patterns:
+      - "Withhold important information from team members"
+      - "Dismiss others' opinions without consideration"
+      - "Break promises or commitments"
+    manager_applications:
+      - "Promote open dialogue in team meetings"
+      - "Discuss how trust was built or maintained in team interactions"
+      - "Encourage sharing of feedback and ideas freely"
+    source_refs:
+      - "About Be LikeABosch.docx"
+  - id: reliability_credibility_legality
+    name: "Reliability, credibility, legality"
+    definition: "Uphold high standards of reliability in work, maintain credibility through consistent actions, and ensure all business practices comply with legal and ethical standards."
+    desired_behaviors:
+      - "Meet deadlines and deliver on commitments"
+      - "Act with integrity and honesty in all interactions"
+      - "Ensure compliance with laws and company policies"
+    anti_patterns:
+      - "Miss deadlines or fail to deliver on promises"
+      - "Engage in unethical or illegal practices"
+      - "Compromise on quality or standards"
+    manager_applications:
+      - "Evaluate reliability in meeting project timelines during performance reviews"
+      - "Discuss how credibility was maintained in client or stakeholder interactions"
+      - "Reinforce the importance of legal and ethical compliance"
+    source_refs:
+      - "About Be LikeABosch.docx"
+  - id: fairness_respect
+    name: "Fairness and respect"
+    definition: "Treat all individuals with fairness, respect their differences, and create an inclusive environment where everyone feels valued."
+    desired_behaviors:
+      - "Respect diverse perspectives and backgrounds"
+      - "Ensure fair treatment in decision - making and opportunities"
+      - "Foster an inclusive culture that values all team members"
+    anti_patterns:
+      - "Discriminate based on gender, age, or other characteristics"
+      - "Show favoritism in opportunities or recognition"
+      - "Disrespect others' opinions or contributions"
+    manager_applications:
+      - "Discuss how fairness and respect were demonstrated in team dynamics"
+      - "Evaluate how inclusive practices were implemented"
+      - "Address any instances of unfair treatment during performance discussions"
+    source_refs:
+      - "About Be LikeABosch.docx"
+  - id: diversity_equity_inclusion
+    name: "Diversity, equity, inclusion"
+    definition: "Embrace diversity in talent, ensure equitable opportunities for all, and create an inclusive workplace that leverages different perspectives for better outcomes."
+    desired_behaviors:
+      - "Recruit and develop a diverse team"
+      - "Provide equal opportunities for growth and development"
+      - "Create an environment where everyone feels included and can contribute"
+    anti_patterns:
+      - "Limit diversity in hiring or team composition"
+      - "Favor certain groups over others in opportunities"
+      - "Exclude individuals from team activities or decision - making"
+    manager_applications:
+      - "Review diversity metrics and inclusion efforts in team performance"
+      - "Discuss how diverse perspectives contributed to team success"
+      - "Ensure equitable distribution of opportunities and recognition"
+    source_refs:
+      - "About Be LikeABosch.docx"
+  - id: responsibility_sustainability
+    name: "Responsibility and sustainability"
+    definition: "Take responsibility for one's actions, contribute to sustainable business practices, and act in ways that conserve natural resources and support social well - being."
+    desired_behaviors:
+      - "Act responsibly in all business decisions"
+      - "Implement sustainable practices in work processes"
+      - "Contribute to environmental and social initiatives"
+    anti_patterns:
+      - "Ignore environmental or social impacts of business actions"
+      - "Shift responsibility to others"
+      - "Engage in practices that harm sustainability"
+    manager_applications:
+      - "Discuss how responsibility was shown in project execution"
+      - "Evaluate contributions to sustainability goals"
+      - "Encourage adopting sustainable practices in daily work"
+    source_refs:
+      - "About Be LikeABosch.docx"
+source_policy:
+  authority: company_approved_only
+  knowledge_scope: culture
+  note: "将公司确认过的价值观定义写入 values，并把制度、行为案例和管理者手册放入 data/kb_raw/culture 后再启用。"
