@@ -13,6 +13,7 @@ env/
 .env
 *.env
 backend/config/.env
+observability/.env
 
 # IDE
 .vscode/
