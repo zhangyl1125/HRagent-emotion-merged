@@ -3,7 +3,7 @@
   "title": "HRagent Demo Logs",
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 3,
   "refresh": "10s",
   "time": {
     "from": "now-1h",
@@ -107,13 +107,14 @@
       "title": "Token Usage (5m)",
       "type": "timeseries",
       "datasource": {
-        "type": "loki",
-        "uid": "loki"
+        "type": "postgres",
+        "uid": "hragent-usage-postgres"
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(sum_over_time({compose_project=\"hragent-05\", service=\"backend\"} |= \"llm_usage\" | regexp \"total_tokens=(?P<total_tokens>[0-9]+)\" | unwrap total_tokens [5m]))"
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(created_at, '5m'), COALESCE(sum(total_tokens), 0)::double precision AS \"Total Tokens\" FROM llm_usage_events WHERE $__timeFilter(created_at) GROUP BY 1 ORDER BY 1"
         }
       ],
       "gridPos": {
@@ -121,12 +122,40 @@
         "y": 8,
         "w": 12,
         "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 45,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       }
     },
     {
       "id": 5,
       "title": "Backend Business Failures",
-      "type": "logs",
+      "type": "timeseries",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -134,20 +163,54 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{compose_project=\"hragent-05\", service=\"backend\"} |~ \"(?i)(documents\\.text\\.failed|guidance.*failed|rehearsal.*failed|redis.*failed)\""
+          "expr": "sum(count_over_time({compose_project=\"hragent-05\", service=\"backend\"} |~ \"(?i)(documents\\\\.text\\\\.failed|guidance.*failed|rehearsal.*failed|redis.*failed)\" [5m])) or vector(0)"
         }
       ],
       "options": {
-        "showTime": true,
-        "showLabels": true,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending"
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "gridPos": {
         "x": 0,
         "y": 16,
         "w": 12,
         "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
       }
     },
     {

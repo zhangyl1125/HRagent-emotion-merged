@@ -1,0 +1,1179 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "FwnPm",
+      "x": 0,
+      "y": 0,
+      "name": "04 谈前指导 - Briefing",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "jemqV",
+          "x": 0,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "$red",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "OnOdY",
+          "x": 290,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "#7D3C98",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "gRalu",
+          "x": 580,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "$blue",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "w2cTf",
+          "x": 870,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "#00A8B5",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "b9dGhp",
+          "x": 1160,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "$green",
+          "width": 280,
+          "height": 6
+        },
+        {
+          "type": "frame",
+          "id": "O14kB",
+          "x": 0,
+          "y": 6,
+          "name": "左侧流程导航",
+          "width": 250,
+          "height": 894,
+          "fill": "$white",
+          "stroke": "$line",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "none",
+          "children": [
+            {
+              "type": "text",
+              "id": "viCfc",
+              "x": 26,
+              "y": 30,
+              "name": "BOSCH 品牌",
+              "fill": "$red",
+              "content": "BOSCH",
+              "fontFamily": "Inter",
+              "fontSize": 21,
+              "fontWeight": "700"
+            },
+            {
+              "type": "icon",
+              "id": "xQNjk",
+              "x": 205,
+              "y": 30,
+              "name": "收起图标",
+              "width": 20,
+              "height": 20,
+              "icon": "panel-left-close",
+              "library": "lucide",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "b5Jpu",
+              "x": 28,
+              "y": 112,
+              "name": "步骤标记 Profile",
+              "width": 28,
+              "height": 28,
+              "fill": "#E4F4EB",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "z1oSo",
+                  "name": "步骤编号",
+                  "fill": "$green",
+                  "content": "01",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "gTcgh",
+              "x": 70,
+              "y": 116,
+              "name": "步骤名称 Profile",
+              "fill": "$ink",
+              "content": "Profile",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "jloeM",
+              "x": 70,
+              "y": 135,
+              "name": "步骤状态 Profile",
+              "fill": "$green",
+              "content": "已完成",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "oOaiZ",
+              "x": 28,
+              "y": 176,
+              "name": "步骤标记 Intent",
+              "width": 28,
+              "height": 28,
+              "fill": "#E4F4EB",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "IMT5y",
+                  "name": "步骤编号",
+                  "fill": "$green",
+                  "content": "02",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "eaNtI",
+              "x": 70,
+              "y": 180,
+              "name": "步骤名称 Intent",
+              "fill": "$ink",
+              "content": "Intent",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "W7w2B",
+              "x": 70,
+              "y": 199,
+              "name": "步骤状态 Intent",
+              "fill": "$green",
+              "content": "已完成",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "n0Ynl",
+              "x": 28,
+              "y": 240,
+              "name": "步骤标记 Persona",
+              "width": 28,
+              "height": 28,
+              "fill": "#E4F4EB",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "OTJqs",
+                  "name": "步骤编号",
+                  "fill": "$green",
+                  "content": "03",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "J1SMHG",
+              "x": 70,
+              "y": 244,
+              "name": "步骤名称 Persona",
+              "fill": "$ink",
+              "content": "Persona",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "eKi8d",
+              "x": 70,
+              "y": 263,
+              "name": "步骤状态 Persona",
+              "fill": "$green",
+              "content": "已完成",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 6,
+              "id": "NMvi5",
+              "x": 16,
+              "y": 294,
+              "name": "Guidance 选中背景",
+              "fill": "$softBlue",
+              "width": 218,
+              "height": 52,
+              "stroke": "$blue",
+              "strokeWidth": 1
+            },
+            {
+              "type": "frame",
+              "id": "AQSlH",
+              "x": 28,
+              "y": 304,
+              "name": "步骤标记 Guidance",
+              "width": 28,
+              "height": 28,
+              "fill": "$blue",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "vAD2b",
+                  "name": "步骤编号",
+                  "fill": "$white",
+                  "content": "04",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "d17M1",
+              "x": 70,
+              "y": 308,
+              "name": "步骤名称 Guidance",
+              "fill": "$blue",
+              "content": "Guidance",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "RNmIe",
+              "x": 70,
+              "y": 327,
+              "name": "步骤状态 Guidance",
+              "fill": "$muted",
+              "content": "当前步骤",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "B6oDQc",
+              "x": 28,
+              "y": 368,
+              "name": "步骤标记 Rehearsal",
+              "width": 28,
+              "height": 28,
+              "fill": "#EDF2F5",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Dp3aB",
+                  "name": "步骤编号",
+                  "fill": "$muted",
+                  "content": "05",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "f5UeO",
+              "x": 70,
+              "y": 372,
+              "name": "步骤名称 Rehearsal",
+              "fill": "$ink",
+              "content": "Rehearsal",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "xGRIc",
+              "x": 70,
+              "y": 391,
+              "name": "步骤状态 Rehearsal",
+              "fill": "$muted",
+              "content": "待完成",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "tlgiR",
+              "x": 28,
+              "y": 432,
+              "name": "步骤标记 Report",
+              "width": 28,
+              "height": 28,
+              "fill": "#EDF2F5",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "yOSNH",
+                  "name": "步骤编号",
+                  "fill": "$muted",
+                  "content": "06",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "XRgCu",
+              "x": 70,
+              "y": 436,
+              "name": "步骤名称 Report",
+              "fill": "$ink",
+              "content": "Report",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "A7pz2C",
+              "x": 70,
+              "y": 455,
+              "name": "步骤状态 Report",
+              "fill": "$muted",
+              "content": "待完成",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "Lh4Hl",
+              "x": 26,
+              "y": 796,
+              "name": "账户名",
+              "fill": "$muted",
+              "content": "aah5sgh",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 5,
+              "id": "AsFQe",
+              "x": 24,
+              "y": 830,
+              "name": "退出按钮",
+              "fill": "$white",
+              "width": 202,
+              "height": 40,
+              "stroke": "$line",
+              "strokeWidth": 1
+            },
+            {
+              "type": "text",
+              "id": "VAuKB",
+              "x": 108,
+              "y": 842,
+              "name": "退出文字",
+              "fill": "$ink",
+              "content": "退出",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "lYLhQ",
+          "x": 298,
+          "y": 48,
+          "name": "页面标题",
+          "fill": "$ink",
+          "content": "谈前指导",
+          "fontFamily": "Inter",
+          "fontSize": 32,
+          "fontWeight": "700"
+        },
+        {
+          "type": "text",
+          "id": "vNusg",
+          "x": 298,
+          "y": 94,
+          "name": "页面说明",
+          "fill": "$muted",
+          "content": "在开始对话前，快速检查目标、开场方式、关键问题与风险。",
+          "fontFamily": "Inter",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "RMtd1",
+          "x": 298,
+          "y": 145,
+          "name": "谈前指导主体",
+          "width": 805,
+          "height": 700,
+          "fill": "$white",
+          "cornerRadius": 9,
+          "stroke": "$line",
+          "strokeWidth": 1,
+          "layout": "none",
+          "children": [
+            {
+              "type": "text",
+              "id": "oWdzD",
+              "x": 28,
+              "y": 26,
+              "name": "主体标题",
+              "fill": "$ink",
+              "content": "本次沟通建议",
+              "fontFamily": "Inter",
+              "fontSize": 21,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "NUHhT",
+              "x": 630,
+              "y": 22,
+              "name": "已准备状态",
+              "width": 145,
+              "height": 32,
+              "fill": "#E7F5ED",
+              "cornerRadius": 16,
+              "gap": 7,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "w05UY",
+                  "name": "准备完成图标",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "circle-check",
+                  "library": "lucide",
+                  "fill": "$green"
+                },
+                {
+                  "type": "text",
+                  "id": "P77uT",
+                  "name": "准备完成文字",
+                  "fill": "$green",
+                  "content": "准备度良好",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 7,
+              "id": "SDdF0",
+              "x": 28,
+              "y": 82,
+              "name": "指导区 开场建议",
+              "fill": "#F8FBFD",
+              "width": 749,
+              "height": 112,
+              "stroke": "$line",
+              "strokeWidth": 1
+            },
+            {
+              "type": "frame",
+              "id": "C4t3my",
+              "x": 46,
+              "y": 102,
+              "name": "指导图标底 开场建议",
+              "width": 38,
+              "height": 38,
+              "fill": "$softBlue",
+              "cornerRadius": 19,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "o2yWM",
+                  "name": "指导图标 开场建议",
+                  "width": 19,
+                  "height": 19,
+                  "icon": "message-square-text",
+                  "library": "lucide",
+                  "fill": "$blue"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "flYAk",
+              "x": 102,
+              "y": 100,
+              "name": "指导标题 开场建议",
+              "fill": "$ink",
+              "content": "开场建议",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "TSAEX",
+              "x": 102,
+              "y": 127,
+              "name": "指导内容 开场建议",
+              "fill": "$muted",
+              "textGrowth": "fixed-width",
+              "width": 640,
+              "content": "先确认会议目的与时间边界，再以具体事实说明希望讨论的问题。",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 7,
+              "id": "dOwnT",
+              "x": 28,
+              "y": 212,
+              "name": "指导区 需要传达的核心信息",
+              "fill": "#F8FBFD",
+              "width": 749,
+              "height": 112,
+              "stroke": "$line",
+              "strokeWidth": 1
+            },
+            {
+              "type": "frame",
+              "id": "c0moR",
+              "x": 46,
+              "y": 232,
+              "name": "指导图标底 需要传达的核心信息",
+              "width": 38,
+              "height": 38,
+              "fill": "$softBlue",
+              "cornerRadius": 19,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "i610o",
+                  "name": "指导图标 需要传达的核心信息",
+                  "width": 19,
+                  "height": 19,
+                  "icon": "target",
+                  "library": "lucide",
+                  "fill": "$green"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "udyUt",
+              "x": 102,
+              "y": 230,
+              "name": "指导标题 需要传达的核心信息",
+              "fill": "$ink",
+              "content": "需要传达的核心信息",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "P74T5k",
+              "x": 102,
+              "y": 257,
+              "name": "指导内容 需要传达的核心信息",
+              "fill": "$muted",
+              "textGrowth": "fixed-width",
+              "width": 640,
+              "content": "项目延期已经影响跨团队交付；需要明确责任、改进节奏和可衡量的检查点。",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 7,
+              "id": "zsVaG",
+              "x": 28,
+              "y": 342,
+              "name": "指导区 建议提问",
+              "fill": "#F8FBFD",
+              "width": 749,
+              "height": 112,
+              "stroke": "$line",
+              "strokeWidth": 1
+            },
+            {
+              "type": "frame",
+              "id": "fwVpR",
+              "x": 46,
+              "y": 362,
+              "name": "指导图标底 建议提问",
+              "width": 38,
+              "height": 38,
+              "fill": "$softBlue",
+              "cornerRadius": 19,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "n1sDhg",
+                  "name": "指导图标 建议提问",
+                  "width": 19,
+                  "height": 19,
+                  "icon": "circle-help",
+                  "library": "lucide",
+                  "fill": "$blue"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "EnKb0",
+              "x": 102,
+              "y": 360,
+              "name": "指导标题 建议提问",
+              "fill": "$ink",
+              "content": "建议提问",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "mAMC4",
+              "x": 102,
+              "y": 387,
+              "name": "指导内容 建议提问",
+              "fill": "$muted",
+              "textGrowth": "fixed-width",
+              "width": 640,
+              "content": "你如何理解近期交付波动的主要原因？哪些支持能够帮助你按计划完成？",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 7,
+              "id": "cqpbB",
+              "x": 28,
+              "y": 472,
+              "name": "指导区 需要避免",
+              "fill": "#FFF5F3",
+              "width": 749,
+              "height": 112,
+              "stroke": "$line",
+              "strokeWidth": 1
+            },
+            {
+              "type": "frame",
+              "id": "PvFZN",
+              "x": 46,
+              "y": 492,
+              "name": "指导图标底 需要避免",
+              "width": 38,
+              "height": 38,
+              "fill": "#FDE3E6",
+              "cornerRadius": 19,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "HGMfl",
+                  "name": "指导图标 需要避免",
+                  "width": 19,
+                  "height": 19,
+                  "icon": "octagon-alert",
+                  "library": "lucide",
+                  "fill": "$red"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "acoXG",
+              "x": 102,
+              "y": 490,
+              "name": "指导标题 需要避免",
+              "fill": "$ink",
+              "content": "需要避免",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "GB1jV",
+              "x": 102,
+              "y": 517,
+              "name": "指导内容 需要避免",
+              "fill": "$muted",
+              "textGrowth": "fixed-width",
+              "width": 640,
+              "content": "避免直接使用人格判断、泛化表达或把退出预警作为开场结论。",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 5,
+              "id": "ZOwak",
+              "x": 430,
+              "y": 632,
+              "name": "重新生成按钮",
+              "fill": "$white",
+              "width": 142,
+              "height": 44,
+              "stroke": "$line",
+              "strokeWidth": 1
+            },
+            {
+              "type": "icon",
+              "id": "ezMqb",
+              "x": 450,
+              "y": 646,
+              "name": "重新生成图标",
+              "width": 16,
+              "height": 16,
+              "icon": "refresh-cw",
+              "library": "lucide",
+              "fill": "$blue"
+            },
+            {
+              "type": "text",
+              "id": "dXGU3",
+              "x": 477,
+              "y": 646,
+              "name": "重新生成文字",
+              "fill": "$blue",
+              "content": "重新生成",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 5,
+              "id": "yPDJw",
+              "x": 590,
+              "y": 632,
+              "name": "进入预演按钮",
+              "fill": "$blue",
+              "width": 187,
+              "height": 44
+            },
+            {
+              "type": "text",
+              "id": "A1Ew7",
+              "x": 632,
+              "y": 646,
+              "name": "进入预演文字",
+              "fill": "$white",
+              "content": "进入对话预演",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "700"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "t4YIe",
+          "x": 1125,
+          "y": 145,
+          "name": "谈前检查侧栏",
+          "width": 267,
+          "height": 700,
+          "fill": "$white",
+          "cornerRadius": 9,
+          "stroke": "$line",
+          "strokeWidth": 1,
+          "layout": "none",
+          "children": [
+            {
+              "type": "text",
+              "id": "uTenc",
+              "x": 22,
+              "y": 26,
+              "name": "侧栏标题",
+              "fill": "$ink",
+              "content": "谈前检查",
+              "fontFamily": "Inter",
+              "fontSize": 19,
+              "fontWeight": "700"
+            },
+            {
+              "type": "ellipse",
+              "id": "X725N",
+              "x": 79,
+              "y": 76,
+              "name": "准备度圆环",
+              "innerRadius": 0.78,
+              "fill": "$blue",
+              "width": 110,
+              "height": 110
+            },
+            {
+              "type": "text",
+              "id": "CJuh5",
+              "x": 112,
+              "y": 112,
+              "name": "准备度数值",
+              "fill": "$ink",
+              "content": "82%",
+              "fontFamily": "Inter",
+              "fontSize": 23,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "mD9sX",
+              "x": 113,
+              "y": 141,
+              "name": "准备度标签",
+              "fill": "$muted",
+              "content": "准备度",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "icon",
+              "id": "GNpFp",
+              "x": 22,
+              "y": 220,
+              "name": "检查图标 事实材料已确认",
+              "width": 18,
+              "height": 18,
+              "icon": "circle-check",
+              "library": "lucide",
+              "fill": "$green"
+            },
+            {
+              "type": "text",
+              "id": "W814gE",
+              "x": 51,
+              "y": 221,
+              "name": "检查文字 事实材料已确认",
+              "fill": "$ink",
+              "content": "事实材料已确认",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon",
+              "id": "mzgOi",
+              "x": 22,
+              "y": 268,
+              "name": "检查图标 沟通目标清晰",
+              "width": 18,
+              "height": 18,
+              "icon": "circle-check",
+              "library": "lucide",
+              "fill": "$green"
+            },
+            {
+              "type": "text",
+              "id": "q17UbS",
+              "x": 51,
+              "y": 269,
+              "name": "检查文字 沟通目标清晰",
+              "fill": "$ink",
+              "content": "沟通目标清晰",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon",
+              "id": "ByMg1",
+              "x": 22,
+              "y": 316,
+              "name": "检查图标 员工 Persona 已选择",
+              "width": 18,
+              "height": 18,
+              "icon": "circle-check",
+              "library": "lucide",
+              "fill": "$green"
+            },
+            {
+              "type": "text",
+              "id": "aIRCv",
+              "x": 51,
+              "y": 317,
+              "name": "检查文字 员工 Persona 已选择",
+              "fill": "$ink",
+              "content": "员工 Persona 已选择",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "600"
+            },
+            {
+              "type": "icon",
+              "id": "at8eV",
+              "x": 22,
+              "y": 364,
+              "name": "检查图标 退出预警措辞待确认",
+              "width": 18,
+              "height": 18,
+              "icon": "circle-alert",
+              "library": "lucide",
+              "fill": "$amber"
+            },
+            {
+              "type": "text",
+              "id": "yfyMo",
+              "x": 51,
+              "y": 365,
+              "name": "检查文字 退出预警措辞待确认",
+              "fill": "$ink",
+              "content": "退出预警措辞待确认",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "600"
+            },
+            {
+              "type": "rectangle",
+              "id": "LpSDd",
+              "x": 22,
+              "y": 430,
+              "name": "检查分隔线",
+              "fill": "$line",
+              "width": 223,
+              "height": 1
+            },
+            {
+              "type": "text",
+              "id": "ROWSc",
+              "x": 22,
+              "y": 458,
+              "name": "当前员工标签",
+              "fill": "$muted",
+              "content": "当前员工",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "uIkDV",
+              "x": 22,
+              "y": 483,
+              "name": "当前员工姓名",
+              "fill": "$ink",
+              "textGrowth": "fixed-width",
+              "width": 220,
+              "content": "朱倩 / ZHU Julia",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "xseWP",
+              "x": 22,
+              "y": 535,
+              "name": "员工 Persona 标签",
+              "fill": "$muted",
+              "content": "Persona",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "aEl29",
+              "x": 22,
+              "y": 559,
+              "name": "Persona 标签",
+              "width": 92,
+              "height": 30,
+              "fill": "$softBlue",
+              "cornerRadius": 15,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ibBik",
+                  "name": "Persona 文字",
+                  "fill": "$blue",
+                  "content": "防御型",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "jZzlK",
+              "x": 22,
+              "y": 612,
+              "name": "提醒卡片",
+              "width": 223,
+              "height": 62,
+              "fill": "#FFF8E7",
+              "cornerRadius": 6,
+              "gap": 9,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "tcpjA",
+                  "name": "提醒图标",
+                  "width": 17,
+                  "height": 17,
+                  "icon": "lightbulb",
+                  "library": "lucide",
+                  "fill": "$amber"
+                },
+                {
+                  "type": "text",
+                  "id": "LiiQ3",
+                  "name": "提醒文字",
+                  "fill": "$ink",
+                  "textGrowth": "fixed-width",
+                  "width": 166,
+                  "content": "先倾听，再给出改进期望。",
+                  "lineHeight": 1.4,
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "bg": {
+      "type": "color",
+      "value": "#F4F7F9"
+    },
+    "white": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "ink": {
+      "type": "color",
+      "value": "#172B3A"
+    },
+    "muted": {
+      "type": "color",
+      "value": "#667784"
+    },
+    "line": {
+      "type": "color",
+      "value": "#D7E0E5"
+    },
+    "blue": {
+      "type": "color",
+      "value": "#007BC0"
+    },
+    "red": {
+      "type": "color",
+      "value": "#EA0016"
+    },
+    "green": {
+      "type": "color",
+      "value": "#00884A"
+    },
+    "softBlue": {
+      "type": "color",
+      "value": "#EAF5FB"
+    },
+    "amber": {
+      "type": "color",
+      "value": "#E68A00"
+    }
+  },
+  "fileToken": "2a74a649-0779-4a9f-a3cd-d86263d46b29"
+}

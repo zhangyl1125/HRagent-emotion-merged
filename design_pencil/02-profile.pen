@@ -1,0 +1,1433 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "iuMvs",
+      "x": 0,
+      "y": 0,
+      "name": "02 员工信息 - Profile",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "U1SQl",
+          "x": 0,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "$red",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "hKxib",
+          "x": 290,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "#7D3C98",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "D75Nt",
+          "x": 580,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "$blue",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "JWRbL",
+          "x": 870,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "#00A8B5",
+          "width": 290,
+          "height": 6
+        },
+        {
+          "type": "rectangle",
+          "id": "o0h7ts",
+          "x": 1160,
+          "y": 0,
+          "name": "顶部品牌色条",
+          "fill": "$green",
+          "width": 280,
+          "height": 6
+        },
+        {
+          "type": "frame",
+          "id": "vY0I1",
+          "x": 0,
+          "y": 6,
+          "name": "左侧导航",
+          "width": 250,
+          "height": 887,
+          "fill": "$white",
+          "stroke": "$line",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            28,
+            24
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "qQtQz",
+              "name": "品牌栏",
+              "width": "fill_container",
+              "height": 60,
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ltpHq",
+                  "name": "BOSCH 品牌",
+                  "fill": "$red",
+                  "content": "BOSCH",
+                  "fontFamily": "Inter",
+                  "fontSize": 22,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "nucS9",
+                  "name": "收起导航",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "panel-left-close",
+                  "library": "lucide",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "P4ccng",
+              "name": "六步流程",
+              "width": "fill_container",
+              "height": 328,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "i2FPur",
+                  "name": "导航 Profile",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "$softBlue",
+                  "cornerRadius": 6,
+                  "gap": 12,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "vdIJh",
+                      "name": "导航编号",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "$blue",
+                      "cornerRadius": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "yt79N",
+                          "name": "编号",
+                          "fill": "$white",
+                          "content": "01",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "phw60",
+                      "name": "导航文字区",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "I9EiNf",
+                          "name": "导航名称",
+                          "fill": "$blue",
+                          "content": "Profile",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "YNM84",
+                          "name": "导航状态",
+                          "fill": "$muted",
+                          "content": "当前步骤",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XZIs2",
+                  "name": "导航 Intent",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "$white",
+                  "cornerRadius": 6,
+                  "gap": 12,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "hOaU0",
+                      "name": "导航编号",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "#EDF2F5",
+                      "cornerRadius": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pvyFD",
+                          "name": "编号",
+                          "fill": "$muted",
+                          "content": "02",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "eMl1e",
+                      "name": "导航文字区",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "T0jtk7",
+                          "name": "导航名称",
+                          "fill": "$ink",
+                          "content": "Intent",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "zK1G3",
+                          "name": "导航状态",
+                          "fill": "$muted",
+                          "content": "待完成",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "sWvOj",
+                  "name": "导航 Persona",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "$white",
+                  "cornerRadius": 6,
+                  "gap": 12,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "efKzx",
+                      "name": "导航编号",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "#EDF2F5",
+                      "cornerRadius": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Qcaxr",
+                          "name": "编号",
+                          "fill": "$muted",
+                          "content": "03",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mPARN",
+                      "name": "导航文字区",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "NRZLn",
+                          "name": "导航名称",
+                          "fill": "$ink",
+                          "content": "Persona",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "SfrSQ",
+                          "name": "导航状态",
+                          "fill": "$muted",
+                          "content": "待完成",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "P4bw7",
+                  "name": "导航 Guidance",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "$white",
+                  "cornerRadius": 6,
+                  "gap": 12,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "C2VJUT",
+                      "name": "导航编号",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "#EDF2F5",
+                      "cornerRadius": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "uH7tA",
+                          "name": "编号",
+                          "fill": "$muted",
+                          "content": "04",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hSYVh",
+                      "name": "导航文字区",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "w8M2zp",
+                          "name": "导航名称",
+                          "fill": "$ink",
+                          "content": "Guidance",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "iUFq0",
+                          "name": "导航状态",
+                          "fill": "$muted",
+                          "content": "待完成",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fMBUt",
+                  "name": "导航 Rehearsal",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "$white",
+                  "cornerRadius": 6,
+                  "gap": 12,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "rCfuT",
+                      "name": "导航编号",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "#EDF2F5",
+                      "cornerRadius": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "c37XUy",
+                          "name": "编号",
+                          "fill": "$muted",
+                          "content": "05",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mdAuO",
+                      "name": "导航文字区",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "P1qnU",
+                          "name": "导航名称",
+                          "fill": "$ink",
+                          "content": "Rehearsal",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "HY2HI",
+                          "name": "导航状态",
+                          "fill": "$muted",
+                          "content": "待完成",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "q7i8w",
+                  "name": "导航 Report",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "$white",
+                  "cornerRadius": 6,
+                  "gap": 12,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "EMO5b",
+                      "name": "导航编号",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "#EDF2F5",
+                      "cornerRadius": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pP3Jx",
+                          "name": "编号",
+                          "fill": "$muted",
+                          "content": "06",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "cxOoI",
+                      "name": "导航文字区",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "azQJp",
+                          "name": "导航名称",
+                          "fill": "$ink",
+                          "content": "Report",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Q5N0A",
+                          "name": "导航状态",
+                          "fill": "$muted",
+                          "content": "待完成",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BkUHM",
+              "name": "账户区",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "justifyContent": "end",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "o6GPBp",
+                  "name": "账户名",
+                  "fill": "$muted",
+                  "content": "aah5sgh",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "wtsmW",
+                  "name": "退出按钮",
+                  "width": "fill_container",
+                  "height": 40,
+                  "cornerRadius": 5,
+                  "stroke": "$line",
+                  "strokeWidth": 1,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZOLjP",
+                      "name": "退出文字",
+                      "fill": "$ink",
+                      "content": "退出",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "B7S1bC",
+          "x": 250,
+          "y": 6,
+          "name": "Profile 主内容",
+          "width": 1190,
+          "height": 887,
+          "layout": "vertical",
+          "gap": 22,
+          "padding": [
+            42,
+            48
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "OMQk8",
+              "name": "页面标题",
+              "fill": "$ink",
+              "content": "员工信息",
+              "fontFamily": "Inter",
+              "fontSize": 32,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "oOaUB",
+              "name": "页面副标题",
+              "fill": "$muted",
+              "content": "建立本次绩效反馈的员工档案与事实背景。",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "I761VX",
+              "name": "双栏内容",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 22,
+              "padding": [
+                1,
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "UK890",
+                  "name": "员工档案表单",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$white",
+                  "cornerRadius": 9,
+                  "stroke": "$line",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 26,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "uBWor",
+                      "name": "表单标题栏",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "WAju1",
+                          "name": "表单标题",
+                          "fill": "$ink",
+                          "content": "员工档案",
+                          "fontFamily": "Inter",
+                          "fontSize": 21,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "I9PfJ9",
+                          "name": "必填提示",
+                          "fill": "$red",
+                          "content": "* 必填项",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ckPLi",
+                      "name": "字段行 0",
+                      "width": "fill_container",
+                      "height": 76,
+                      "gap": 18,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "miVYA",
+                          "name": "字段 员工姓名",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 7,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n8Hdi",
+                              "name": "字段标签",
+                              "fill": "$muted",
+                              "content": "员工姓名",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "VpQDg",
+                              "name": "输入框 员工姓名",
+                              "width": "fill_container",
+                              "height": 44,
+                              "fill": "#FAFCFD",
+                              "cornerRadius": 5,
+                              "stroke": "$line",
+                              "strokeWidth": 1,
+                              "padding": [
+                                0,
+                                13
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "w5ek9I",
+                                  "name": "输入内容",
+                                  "fill": "$ink",
+                                  "content": "朱倩 / ZHU Julia",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "WKAci",
+                          "name": "字段 部门 / 团队",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 7,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "D2r8Pd",
+                              "name": "字段标签",
+                              "fill": "$muted",
+                              "content": "部门 / 团队",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "OFFoV",
+                              "name": "输入框 部门 / 团队",
+                              "width": "fill_container",
+                              "height": 44,
+                              "fill": "#FAFCFD",
+                              "cornerRadius": 5,
+                              "stroke": "$line",
+                              "strokeWidth": 1,
+                              "padding": [
+                                0,
+                                13
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Tw5lP",
+                                  "name": "输入内容",
+                                  "fill": "$ink",
+                                  "content": "Digital Transformation",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kYkxU",
+                      "name": "字段行 2",
+                      "width": "fill_container",
+                      "height": 76,
+                      "gap": 18,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "p57MMg",
+                          "name": "字段 职位",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 7,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "WSRun",
+                              "name": "字段标签",
+                              "fill": "$muted",
+                              "content": "职位",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "o9XOH",
+                              "name": "输入框 职位",
+                              "width": "fill_container",
+                              "height": 44,
+                              "fill": "#FAFCFD",
+                              "cornerRadius": 5,
+                              "stroke": "$line",
+                              "strokeWidth": 1,
+                              "padding": [
+                                0,
+                                13
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "ZteNH",
+                                  "name": "输入内容",
+                                  "fill": "$ink",
+                                  "content": "Project Manager",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Hzydo",
+                          "name": "字段 直属经理",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 7,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "o7U4J",
+                              "name": "字段标签",
+                              "fill": "$muted",
+                              "content": "直属经理",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "U1eluF",
+                              "name": "输入框 直属经理",
+                              "width": "fill_container",
+                              "height": 44,
+                              "fill": "#FAFCFD",
+                              "cornerRadius": 5,
+                              "stroke": "$line",
+                              "strokeWidth": 1,
+                              "padding": [
+                                0,
+                                13
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "RH7rO",
+                                  "name": "输入内容",
+                                  "fill": "$ink",
+                                  "content": "Ms. 宁春燕 / NING Chunyan",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "k15yzU",
+                      "name": "绩效背景标签",
+                      "fill": "$muted",
+                      "content": "绩效背景",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "jMGAo",
+                      "name": "绩效背景输入",
+                      "width": "fill_container",
+                      "height": 118,
+                      "fill": "#FAFCFD",
+                      "cornerRadius": 5,
+                      "stroke": "$line",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "hUblx",
+                          "name": "背景文字",
+                          "fill": "$ink",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "近期项目交付节奏不稳定，跨团队协作中出现多次延期。需要就改进计划、责任边界与后续支持进行清晰反馈。",
+                          "lineHeight": 1.55,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "hwztu",
+                      "name": "附件标签",
+                      "fill": "$muted",
+                      "content": "支持材料",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GT4lu",
+                      "name": "文件上传区",
+                      "width": "fill_container",
+                      "height": 86,
+                      "fill": "#F8FBFD",
+                      "cornerRadius": 6,
+                      "stroke": "$line",
+                      "strokeWidth": 1,
+                      "gap": 10,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "jSQ0W",
+                          "name": "上传图标",
+                          "width": 20,
+                          "height": 20,
+                          "icon": "cloud-upload",
+                          "library": "lucide",
+                          "fill": "$blue"
+                        },
+                        {
+                          "type": "text",
+                          "id": "K4EIbH",
+                          "name": "上传提示",
+                          "fill": "$blue",
+                          "content": "上传绩效材料或会议记录（PDF / DOCX）",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "YRfgf",
+                      "name": "表单操作",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "gap": 12,
+                      "justifyContent": "end",
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ZW5NS",
+                          "name": "保存草稿",
+                          "width": 112,
+                          "height": 44,
+                          "cornerRadius": 5,
+                          "stroke": "$line",
+                          "strokeWidth": 1,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "oTw6F",
+                              "name": "草稿文字",
+                              "fill": "$ink",
+                              "content": "保存草稿",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Z8UQa4",
+                          "name": "保存并继续",
+                          "width": 148,
+                          "height": 44,
+                          "fill": "$blue",
+                          "cornerRadius": 5,
+                          "gap": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "bqH7x",
+                              "name": "继续文字",
+                              "fill": "$white",
+                              "content": "保存并继续",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "M2It4m",
+                              "name": "继续箭头",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "arrow-right",
+                              "library": "lucide",
+                              "fill": "$white"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "B4Mlfx",
+                  "name": "员工概览侧栏",
+                  "width": 325,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "LtNfB",
+                      "name": "员工摘要",
+                      "width": "fill_container",
+                      "height": 220,
+                      "fill": "$white",
+                      "cornerRadius": 9,
+                      "stroke": "$line",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "pRwus",
+                          "name": "员工头像",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$softBlue",
+                          "cornerRadius": 24,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "BzK2G",
+                              "name": "头像文字",
+                              "fill": "$blue",
+                              "content": "ZJ",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "DdvgA",
+                          "name": "员工姓名摘要",
+                          "fill": "$ink",
+                          "content": "朱倩 / ZHU Julia",
+                          "fontFamily": "Inter",
+                          "fontSize": 18,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "iBwb8",
+                          "name": "员工职位摘要",
+                          "fill": "$muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Project Manager · Digital Transformation",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "sJOFg",
+                          "name": "档案状态",
+                          "width": 96,
+                          "height": 28,
+                          "fill": "#E7F5ED",
+                          "cornerRadius": 14,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "BUuD5",
+                              "name": "状态文字",
+                              "fill": "$green",
+                              "content": "档案已载入",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "DBGn5",
+                      "name": "历史反馈",
+                      "width": "fill_container",
+                      "height": 245,
+                      "fill": "$white",
+                      "cornerRadius": 9,
+                      "stroke": "$line",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 14,
+                      "padding": 22,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ejJQj",
+                          "name": "历史反馈标题",
+                          "fill": "$ink",
+                          "content": "历史反馈",
+                          "fontFamily": "Inter",
+                          "fontSize": 17,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "oCQ4W",
+                          "name": "历史 2026 Q1",
+                          "width": "fill_container",
+                          "height": 48,
+                          "stroke": "$line",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "sZFgO",
+                              "name": "历史内容",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "urxNc",
+                                  "name": "历史日期",
+                                  "fill": "$ink",
+                                  "content": "2026 Q1",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "xPg4A",
+                                  "name": "历史主题",
+                                  "fill": "$muted",
+                                  "content": "跨团队协作",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "f0dM4q",
+                              "name": "历史状态",
+                              "fill": "$red",
+                              "content": "待跟进",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Bt6Kd",
+                          "name": "历史 2025 年终",
+                          "width": "fill_container",
+                          "height": 48,
+                          "stroke": "$line",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "jeZup",
+                              "name": "历史内容",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "A1PfT",
+                                  "name": "历史日期",
+                                  "fill": "$ink",
+                                  "content": "2025 年终",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "qMwZX",
+                                  "name": "历史主题",
+                                  "fill": "$muted",
+                                  "content": "交付质量",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "uajUi",
+                              "name": "历史状态",
+                              "fill": "$green",
+                              "content": "已完成",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "daSMi",
+                          "name": "历史 2025 Q2",
+                          "width": "fill_container",
+                          "height": 48,
+                          "stroke": "$line",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "mWKV7",
+                              "name": "历史内容",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "E0G8Bw",
+                                  "name": "历史日期",
+                                  "fill": "$ink",
+                                  "content": "2025 Q2",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "tBdil",
+                                  "name": "历史主题",
+                                  "fill": "$muted",
+                                  "content": "角色成长",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "RQnv9",
+                              "name": "历史状态",
+                              "fill": "$green",
+                              "content": "已完成",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "qDQes",
+                      "name": "隐私提示",
+                      "width": "fill_container",
+                      "height": 140,
+                      "fill": "#EEF7FB",
+                      "cornerRadius": 9,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 20,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "JgyZ4",
+                          "name": "盾牌图标",
+                          "width": 22,
+                          "height": 22,
+                          "icon": "shield-check",
+                          "library": "lucide",
+                          "fill": "$blue"
+                        },
+                        {
+                          "type": "text",
+                          "id": "NXgHD",
+                          "name": "隐私标题",
+                          "fill": "$ink",
+                          "content": "数据仅用于本次准备",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ido2j",
+                          "name": "隐私说明",
+                          "fill": "$muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "请只填写与绩效反馈直接相关的事实信息。",
+                          "lineHeight": 1.45,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "bg": {
+      "type": "color",
+      "value": "#F4F7F9"
+    },
+    "white": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "ink": {
+      "type": "color",
+      "value": "#172B3A"
+    },
+    "muted": {
+      "type": "color",
+      "value": "#667784"
+    },
+    "line": {
+      "type": "color",
+      "value": "#D7E0E5"
+    },
+    "blue": {
+      "type": "color",
+      "value": "#007BC0"
+    },
+    "red": {
+      "type": "color",
+      "value": "#EA0016"
+    },
+    "green": {
+      "type": "color",
+      "value": "#00884A"
+    },
+    "softBlue": {
+      "type": "color",
+      "value": "#EAF5FB"
+    }
+  },
+  "fileToken": "6e1d3324-0e63-4501-b75e-9f2eeb67cb60"
+}
