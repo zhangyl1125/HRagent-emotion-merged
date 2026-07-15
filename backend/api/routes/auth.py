@@ -5,10 +5,10 @@ from functools import lru_cache
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from backend.config.settings import Settings, get_settings
-from backend.core.auth_dependency import get_current_session, require_admin_session
+from backend.core.auth_dependency import get_auth_session_service, get_current_session, require_super_admin_session
 from backend.schemas.auth import AdminAccountCreateRequest, AdminAccountResponse, AdminAccountsResponse, AdminPasswordResetRequest, AdminWhitelistUpdateRequest, AuthMeResponse, AuthSuccessResponse, AuthUserResponse, LoginRequest, RegisterRequest
 from backend.services.auth_service import AuthService, InvalidCredentials, RegistrationFailed, SessionLimitReached
-from backend.services.auth_session_service import AuthSession
+from backend.services.auth_session_service import AuthSession, AuthSessionService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -53,6 +53,11 @@ async def login(
     return AuthSuccessResponse(success=True, user=result.user)
 
 
+@router.get("/csrf")
+async def csrf_token(current_session: AuthSession = Depends(get_current_session), session_service: AuthSessionService = Depends(get_auth_session_service)):
+    return {"csrf_token": session_service.create_csrf_token(current_session.session_id)}
+
+
 @router.get("/me", response_model=AuthMeResponse)
 async def me(current_session: AuthSession = Depends(get_current_session)):
     return AuthMeResponse(authenticated=True, user=current_session.user)
@@ -77,7 +82,7 @@ async def oidc_login():
 
 @router.get("/admin/accounts", response_model=AdminAccountsResponse)
 async def admin_accounts(
-    _admin: AuthSession = Depends(require_admin_session),
+    _admin: AuthSession = Depends(require_super_admin_session),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     return AdminAccountsResponse(items=auth_service.list_admin_accounts())
@@ -87,7 +92,7 @@ async def admin_accounts(
 async def admin_create_account(
     payload: AdminAccountCreateRequest,
     request: Request,
-    _admin: AuthSession = Depends(require_admin_session),
+    _admin: AuthSession = Depends(require_super_admin_session),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     try:
@@ -101,7 +106,7 @@ async def admin_reset_password(
     email: str,
     payload: AdminPasswordResetRequest,
     request: Request,
-    _admin: AuthSession = Depends(require_admin_session),
+    _admin: AuthSession = Depends(require_super_admin_session),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     try:
@@ -114,7 +119,7 @@ async def admin_reset_password(
 async def admin_delete_account(
     email: str,
     request: Request,
-    _admin: AuthSession = Depends(require_admin_session),
+    _admin: AuthSession = Depends(require_super_admin_session),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     try:
@@ -128,7 +133,7 @@ async def admin_delete_account(
 async def admin_update_whitelist(
     payload: AdminWhitelistUpdateRequest,
     request: Request,
-    _admin: AuthSession = Depends(require_admin_session),
+    _admin: AuthSession = Depends(require_super_admin_session),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     try:

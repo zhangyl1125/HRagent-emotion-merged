@@ -1,0 +1,211 @@
+{
+  "uid": "hragent-demo-logs",
+  "title": "HRagent Demo Logs",
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "query": "label_values({compose_project=\"hragent-05\"}, service)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Rate by Service",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service) (rate({compose_project=\"hragent-05\"}[5m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 2,
+      "title": "Errors in Last 5 Minutes",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({compose_project=\"hragent-05\"} |~ \"(?i)(error|exception|critical|traceback|failed)\" [5m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 3,
+      "title": "Error Rate by Service",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service) (rate({compose_project=\"hragent-05\"} |~ \"(?i)(error|exception|critical|traceback|failed)\" [5m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 4,
+      "title": "Token Usage (5m)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(sum_over_time({compose_project=\"hragent-05\", service=\"backend\"} |= \"llm_usage\" | regexp \"total_tokens=(?P<total_tokens>[0-9]+)\" | unwrap total_tokens [5m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 5,
+      "title": "Backend Business Failures",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{compose_project=\"hragent-05\", service=\"backend\"} |~ \"(?i)(documents\\.text\\.failed|guidance.*failed|rehearsal.*failed|redis.*failed)\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 10
+      }
+    },
+    {
+      "id": 6,
+      "title": "Live Logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{compose_project=\"hragent-05\", service=~\"$service\"} |= \"$search\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 10
+      }
+    },
+    {
+      "id": 7,
+      "title": "Token Usage by User",
+      "type": "table",
+      "datasource": {
+        "type": "postgres",
+        "uid": "hragent-usage-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(NULLIF(u.display_name, ''), CASE WHEN e.user_id IS NOT NULL THEN 'User ' || left(e.user_id::text, 8) ELSE 'Unknown' END) AS \"User\", COALESCE(sum(e.input_tokens), 0)::bigint AS \"Input Tokens\", COALESCE(sum(e.output_tokens), 0)::bigint AS \"Output Tokens\", COALESCE(sum(e.total_tokens), 0)::bigint AS \"Total Tokens\", count(*)::bigint AS \"LLM Calls\", max(e.created_at) AS \"Last Used At\" FROM llm_usage_events e LEFT JOIN app_users u ON u.id = e.user_id WHERE $__timeFilter(e.created_at) GROUP BY 1 ORDER BY \"Total Tokens\" DESC, \"User\" ASC"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 10
+      }
+    }
+  ]
+}

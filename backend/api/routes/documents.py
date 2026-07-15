@@ -12,7 +12,7 @@ from backend.repositories.document_repository import DocumentRepository
 from backend.schemas.api import TextDocumentRequest
 from backend.schemas.document import DocumentRecord
 from backend.services.upload_document import UploadDocumentService
-from backend.utils.logger import get_logger
+from backend.utils.logger import get_logger, safe_ref, safe_suffix
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 logger = get_logger(__name__)
@@ -21,17 +21,17 @@ logger = get_logger(__name__)
 @router.post("/text", response_model=DocumentRecord)
 async def upload_text(payload: TextDocumentRequest, service: UploadDocumentService = Depends(get_document_service)):
     logger.info(
-        "documents.text.start session_id=%s text_chars=%s filename=%s",
-        payload.session_id,
+        "documents.text.start | session_ref=%s | text_chars=%s | extension=%s",
+        safe_ref(payload.session_id),
         len(payload.text or ""),
-        payload.filename,
+        safe_suffix(payload.filename),
     )
     try:
         record = await service.process_text(text=payload.text, filename=payload.filename, session_id=payload.session_id)
     except Exception:
-        logger.exception("documents.text.failed session_id=%s", payload.session_id)
+        logger.exception("documents.text.failed | session_ref=%s", safe_ref(payload.session_id))
         raise
-    logger.info("documents.text.done session_id=%s document_id=%s", payload.session_id, record.document_id)
+    logger.info("documents.text.done | session_ref=%s", safe_ref(payload.session_id))
     return record
 
 

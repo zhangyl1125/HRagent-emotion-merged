@@ -1,7 +1,14 @@
 name: hragent-05
 
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 services:
   postgres:
+    logging: *default-logging
     image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
@@ -19,6 +26,7 @@ services:
       retries: 20
 
   redis:
+    logging: *default-logging
     image: redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -33,6 +41,7 @@ services:
       retries: 20
 
   backend:
+    logging: *default-logging
     restart: unless-stopped
     build:
       context: .
@@ -69,17 +78,18 @@ services:
     command: >
       sh -c "set -e;
       if [ -f data/employee_database/employees.xlsx ]; then
-        python scripts/import_employees.py data/employee_database/employees.xlsx --quiet;
+        python scripts/import_employees.py data/employee_database/employees.xlsx --quiet >/dev/null;
       else
-        echo 'employees.xlsx not found, skip employee import';
+        echo 'employee import skipped';
       fi;
-      uvicorn backend.main:app --host 0.0.0.0 --port 8111 --limit-concurrency $${UVICORN_LIMIT_CONCURRENCY:-200}"
+      uvicorn backend.main:app --host 0.0.0.0 --port 8111 --no-access-log --limit-concurrency $${UVICORN_LIMIT_CONCURRENCY:-200}"
     ports:
       - "8111:8111"
     volumes:
       - ./data:/app/data
 
   frontend:
+    logging: *default-logging
     restart: unless-stopped
     build:
       context: frontend

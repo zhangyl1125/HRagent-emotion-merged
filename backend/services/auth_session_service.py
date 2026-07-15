@@ -191,3 +191,31 @@ class AuthSessionService:
     @staticmethod
     def _key(session_id: str) -> str:
         return f"session:{session_id}"
+
+    def create_csrf_token(self, session_id: str) -> str:
+        client = self._client()
+        if client is None:
+            raise AuthSessionError("REDIS_UNAVAILABLE")
+        raw = client.get(self._key(session_id))
+        if not raw:
+            raise AuthSessionError("SESSION_NOT_FOUND")
+        payload = json.loads(raw)
+        token = secrets.token_urlsafe(32)
+        payload["csrf_token"] = token
+        client.setex(self._key(session_id), self.settings.auth_session_idle_timeout_seconds, json.dumps(payload, ensure_ascii=False))
+        return token
+
+    def validate_csrf_token(self, session_id: str | None, token: str | None) -> bool:
+        if not session_id or not token:
+            return False
+        client = self._client()
+        if client is None:
+            return False
+        try:
+            raw = client.get(self._key(session_id))
+            if not raw:
+                return False
+            expected = json.loads(raw).get("csrf_token")
+            return isinstance(expected, str) and secrets.compare_digest(expected, token)
+        except (RedisError, ValueError, TypeError):
+            return False

@@ -43,14 +43,25 @@ class WhitelistService:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def set_allowed(self, email: str, enabled: bool, note: str = "managed by administrator") -> None:
+    def set_allowed(
+        self,
+        email: str,
+        enabled: bool,
+        note: str = "managed by administrator",
+        *,
+        actor_email: str | None = None,
+    ) -> None:
         normalized = email.strip().lower()
         with self.repo.connection() as conn:
             conn.execute(
                 """
-                INSERT INTO auth_whitelist (email, enabled, note)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (email) DO UPDATE SET enabled = EXCLUDED.enabled, note = EXCLUDED.note
+                INSERT INTO auth_whitelist (email, enabled, note, created_by, updated_by, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (email) DO UPDATE SET
+                    enabled = EXCLUDED.enabled,
+                    note = EXCLUDED.note,
+                    updated_by = COALESCE(EXCLUDED.updated_by, auth_whitelist.updated_by),
+                    updated_at = NOW()
                 """,
-                (normalized, enabled, note),
+                (normalized, enabled, note, actor_email, actor_email),
             )

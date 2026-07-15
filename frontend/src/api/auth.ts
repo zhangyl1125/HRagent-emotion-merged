@@ -19,14 +19,25 @@ function detailFromPayload(payload: unknown): string {
   return JSON.stringify(detail ?? data);
 }
 
+let csrfToken: string | null = null;
+
+async function getCsrfToken(): Promise<string> {
+  if (csrfToken) return csrfToken;
+  const response = await fetch(`${getApiBase()}/auth/csrf`, { credentials: 'include' });
+  if (!response.ok) throw new Error('无法获取安全令牌。');
+  csrfToken = (await response.json() as { csrf_token: string }).csrf_token;
+  return csrfToken;
+}
+
 async function authRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const isAdminWrite = (path.startsWith('/admin/') || path.startsWith('/auth/admin/')) && !['GET', 'HEAD'].includes((options.method || 'GET').toUpperCase());
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
+  if (isAdminWrite) headers.set('X-CSRF-Token', await getCsrfToken());
   const response = await fetch(`${getApiBase()}${path}`, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    headers,
   });
   const payload = await parseResponse(response);
   if (!response.ok) throw new Error(detailFromPayload(payload));

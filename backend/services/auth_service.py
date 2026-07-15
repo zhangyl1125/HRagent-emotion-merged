@@ -73,9 +73,9 @@ class AuthService:
                 conn.execute(
                     """
                     INSERT INTO app_users (email, display_name, password_hash, auth_provider, role, is_active, is_email_verified)
-                    VALUES (%s, %s, %s, 'local', 'user', TRUE, TRUE)
+                    VALUES (%s, %s, %s, 'local', %s, TRUE, TRUE)
                     """,
-                    (payload.email, payload.display_name, password_hash),
+                    (payload.email, payload.display_name, password_hash, "admin" if payload.email == self.settings.admin_super_email.strip().lower() else "user"),
                 )
             self._audit(payload.email, "register", True, None, request)
         except (PasswordPolicyError, RateLimitExceeded):
@@ -135,8 +135,8 @@ class AuthService:
             password_hash = await asyncio.to_thread(self.password_service.hash_password, payload.password)
         except PasswordPolicyError as exc:
             raise RegistrationFailed("INVALID_PASSWORD") from exc
-        role = "admin" if payload.email == "aah5sgh@bosch.com" else "user"
-        self.whitelist_service.set_allowed(payload.email, True)
+        role = "admin" if payload.email == self.settings.admin_super_email.strip().lower() else "user"
+        self.whitelist_service.set_allowed(payload.email, True, actor_email=self._actor_email(request))
         with self.repo.connection() as conn:
             conn.execute(
                 """
@@ -177,18 +177,23 @@ class AuthService:
         normalized = email.strip().lower()
         if not self._is_bosch_email(normalized):
             raise RegistrationFailed("BOSCH_EMAIL_REQUIRED")
-        if normalized == "aah5sgh@bosch.com" and not enabled:
+        if normalized == self.settings.admin_super_email.strip().lower() and not enabled:
             raise RegistrationFailed("ADMIN_WHITELIST_REQUIRED")
-        self.whitelist_service.set_allowed(normalized, enabled)
+        self.whitelist_service.set_allowed(normalized, enabled, actor_email=self._actor_email(request))
         user = self._get_user_by_email(normalized)
         if not enabled and user:
+            with self.repo.connection() as conn:
+                conn.execute("UPDATE app_users SET is_active = FALSE, updated_at = NOW() WHERE id = %s", (user.id,))
             self.session_service.delete_user_sessions(user.id)
+        elif enabled and user:
+            with self.repo.connection() as conn:
+                conn.execute("UPDATE app_users SET is_active = TRUE, updated_at = NOW() WHERE id = %s", (user.id,))
         self._audit(normalized, "admin_update_whitelist", True, None, request)
         return self._admin_account(normalized)
 
     def admin_delete_account(self, email: str, request: Request) -> None:
         normalized = email.strip().lower()
-        if normalized == "aah5sgh@bosch.com":
+        if normalized == self.settings.admin_super_email.strip().lower():
             raise RegistrationFailed("ADMIN_ACCOUNT_REQUIRED")
         with self.repo.connection() as conn:
             whitelist = conn.execute(
@@ -206,10 +211,11 @@ class AuthService:
                 "UPDATE app_users SET is_active = FALSE, updated_at = NOW() WHERE lower(email::text) = %s",
                 (normalized,),
             )
-            conn.execute(
-                "UPDATE locust_test_credentials SET enabled = FALSE, updated_at = NOW() WHERE lower(email::text) = %s",
-                (normalized,),
-            )
+            if conn.execute("SELECT to_regclass('public.locust_test_credentials') AS table_name").fetchone()["table_name"]:
+                conn.execute(
+                    "UPDATE locust_test_credentials SET enabled = FALSE, updated_at = NOW() WHERE lower(email::text) = %s",
+                    (normalized,),
+                )
         if user:
             self.session_service.delete_user_sessions(user["id"])
         self._audit(normalized, "admin_delete_account", True, None, request)
@@ -269,6 +275,11 @@ class AuthService:
     async def _burn_hash_time(self, password: str) -> None:
         async with hash_semaphore():
             await asyncio.to_thread(self.password_service.verify_password, password, "$argon2id$v=19$m=19456,t=2,p=1$bGltaXRlZGxvZ2luYnVybjE2Yg$4t8C5JTy1rAf0FwwaSYW4Hx2DKPbfv0QW3khn3Y/yfI")
+
+    @staticmethod
+    def _actor_email(request: Request) -> str | None:
+        value = getattr(request.state, "auth_email", None)
+        return str(value).strip().lower() if value else None
 
     @staticmethod
     def _is_bosch_email(email: str) -> bool:

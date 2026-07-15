@@ -842,7 +842,10 @@ body {
   margin: 0;
   padding: 2px;
   flex: 1;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   display: grid;
   grid-template-columns: 1fr;
   align-content: start;
@@ -898,6 +901,7 @@ body {
 
 .sidebar-footer {
   width: 100%;
+  flex: 0 0 auto;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--border-subtle);
@@ -1063,6 +1067,31 @@ body {
 .app-sidebar.is-collapsed .step-item:not(:disabled):hover::before,
 .app-sidebar.is-collapsed .step-item:focus-visible::before {
   transform: translate(0, -50%) rotate(45deg);
+}
+
+@media (max-height: 980px) and (min-width: 761px) {
+  .app-sidebar:not(.is-collapsed) {
+    gap: 12px;
+    padding-top: 14px;
+    padding-bottom: 12px;
+  }
+
+  .app-sidebar:not(.is-collapsed) .workspace-toolbar {
+    padding-bottom: 12px;
+  }
+
+  .app-sidebar:not(.is-collapsed) .stepper {
+    gap: 4px;
+  }
+
+  .app-sidebar:not(.is-collapsed) .step-item {
+    min-height: 50px;
+    padding-block: 7px;
+  }
+
+  .app-sidebar:not(.is-collapsed) .sidebar-footer {
+    padding-top: 10px;
+  }
 }
 
 

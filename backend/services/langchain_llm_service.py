@@ -26,6 +26,7 @@ except ImportError as exc:  # pragma: no cover - runtime dependency guard
 from backend.config.settings import Settings, get_settings
 from backend.exceptions.llm_errors import LLMError
 from backend.services.model_api_auth import ModelAPIAuth
+from backend.services.usage_tracking_service import UsageTrackingService
 
 StructuredModelT = TypeVar("StructuredModelT", bound=BaseModel)
 
@@ -139,6 +140,7 @@ class ModelFarmLangChainChatModel(BaseChatModel):
                 last_error = exc
                 if attempt >= self.settings.llm_max_retries:
                     break
+        UsageTrackingService().record(usage=UsageTrackingService.normalize(None), task_name=self.task_name, provider=self.settings.llm_provider, model=self.settings.model_for_task(self.task_name, self.explicit_model), streaming=False, status="error", duration_ms=None, retry_count=self.settings.llm_max_retries, error_code=type(last_error).__name__ if last_error else "LLMError")
         raise LLMError(f"LangChain chat model invocation failed: {self._format_exception(last_error)}")
 
     async def _agenerate(
@@ -165,9 +167,16 @@ class ModelFarmLangChainChatModel(BaseChatModel):
                 last_error = exc
                 if attempt >= self.settings.llm_max_retries:
                     break
+        UsageTrackingService().record(usage=UsageTrackingService.normalize(None), task_name=self.task_name, provider=self.settings.llm_provider, model=self.settings.model_for_task(self.task_name, self.explicit_model), streaming=False, status="error", duration_ms=None, retry_count=self.settings.llm_max_retries, error_code=type(last_error).__name__ if last_error else "LLMError")
         raise LLMError(f"LangChain chat model invocation failed: {self._format_exception(last_error)}")
 
     def _chat_result_from_response(self, data: dict[str, Any]) -> ChatResult:
+        UsageTrackingService().record(
+            usage=UsageTrackingService.normalize(self._extract_usage(data)),
+            task_name=self.task_name, provider=self.settings.llm_provider,
+            model=self.settings.model_for_task(self.task_name, self.explicit_model),
+            streaming=False, status="success", duration_ms=None,
+        )
         content = self._extract_content(data)
         tool_calls = self._extract_tool_calls(data)
         if content is None and not tool_calls:
@@ -190,25 +199,40 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         headers = await self._auth.async_headers(self.settings.chat_api_key)
         headers.setdefault("Content-Type", "application/json")
         last_error: Exception | None = None
-        for attempt in range(self.settings.llm_max_retries + 1):
-            try:
-                client = _shared_async_http_client(self.settings)
-                async with client.stream("POST", url, headers=headers, json=payload) as resp:
-                    if resp.status_code >= 400:
-                        body = (await resp.aread()).decode("utf-8", errors="replace")[:1000]
-                        raise LLMError(f"Chat API HTTP {resp.status_code}: {body}")
-                    async for delta in self._iter_stream_deltas(resp):
-                        if delta:
-                            yield delta
-                return
-            except Exception as exc:  # noqa: BLE001
-                last_error = exc
-                if attempt >= self.settings.llm_max_retries:
-                    break
-        raise LLMError(f"LangChain chat model streaming failed: {self._format_exception(last_error)}")
+        input_bytes = len(json.dumps(payload.get("messages", []), ensure_ascii=False).encode("utf-8"))
+        output_bytes = 0
+        completed = False
+        try:
+            for attempt in range(self.settings.llm_max_retries + 1):
+                try:
+                    client = _shared_async_http_client(self.settings)
+                    async with client.stream("POST", url, headers=headers, json=payload) as resp:
+                        if resp.status_code >= 400:
+                            body = (await resp.aread()).decode("utf-8", errors="replace")[:1000]
+                            raise LLMError(f"Chat API HTTP {resp.status_code}: {body}")
+                        async for delta in self._iter_stream_deltas(resp):
+                            if delta:
+                                output_bytes += len(delta.encode("utf-8"))
+                                yield delta
+                    completed = True
+                    return
+                except Exception as exc:  # noqa: BLE001
+                    last_error = exc
+                    if attempt >= self.settings.llm_max_retries:
+                        break
+            raise LLMError(f"LangChain chat model streaming failed: {self._format_exception(last_error)}")
+        finally:
+            UsageTrackingService().record(
+                usage=UsageTrackingService.normalize(None, estimated_input_bytes=input_bytes, estimated_output_bytes=output_bytes),
+                task_name=self.task_name, provider=self.settings.llm_provider,
+                model=self.settings.model_for_task(self.task_name, self.explicit_model), streaming=True,
+                status="success" if completed else "cancelled" if output_bytes else "error",
+                duration_ms=None, retry_count=self.settings.llm_max_retries if last_error else 0,
+                error_code=type(last_error).__name__ if last_error else None,
+            )
 
     async def astream_events(self, messages: list[BaseMessage], stop: list[str] | None = None) -> AsyncIterator[tuple[str, str]]:
-        """Stream both the chain-of-thought (``thinking``) and the answer (``content``) channels."""
+        """Stream reasoning/content while retaining only aggregate output byte counts."""
         url = self.settings.chat_url
         if not url:
             raise LLMError("Chat API endpoint is not configured.")
@@ -216,22 +240,36 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         headers = await self._auth.async_headers(self.settings.chat_api_key)
         headers.setdefault("Content-Type", "application/json")
         last_error: Exception | None = None
-        for attempt in range(self.settings.llm_max_retries + 1):
-            try:
-                client = _shared_async_http_client(self.settings)
-                async with client.stream("POST", url, headers=headers, json=payload) as resp:
-                    if resp.status_code >= 400:
-                        body = (await resp.aread()).decode("utf-8", errors="replace")[:1000]
-                        raise LLMError(f"Chat API HTTP {resp.status_code}: {body}")
-                    async for channel, text in self._iter_stream_events(resp):
-                        if text:
-                            yield channel, text
-                return
-            except Exception as exc:  # noqa: BLE001
-                last_error = exc
-                if attempt >= self.settings.llm_max_retries:
-                    break
-        raise LLMError(f"LangChain chat model streaming failed: {self._format_exception(last_error)}")
+        input_bytes = len(json.dumps(payload.get("messages", []), ensure_ascii=False).encode("utf-8"))
+        output_bytes = 0; completed = False
+        try:
+            for attempt in range(self.settings.llm_max_retries + 1):
+                try:
+                    client = _shared_async_http_client(self.settings)
+                    async with client.stream("POST", url, headers=headers, json=payload) as resp:
+                        if resp.status_code >= 400:
+                            body = (await resp.aread()).decode("utf-8", errors="replace")[:1000]
+                            raise LLMError(f"Chat API HTTP {resp.status_code}: {body}")
+                        async for channel, text in self._iter_stream_events(resp):
+                            if text:
+                                output_bytes += len(text.encode("utf-8"))
+                                yield channel, text
+                    completed = True
+                    return
+                except Exception as exc:  # noqa: BLE001
+                    last_error = exc
+                    if attempt >= self.settings.llm_max_retries:
+                        break
+            raise LLMError(f"LangChain chat model streaming failed: {self._format_exception(last_error)}")
+        finally:
+            UsageTrackingService().record(
+                usage=UsageTrackingService.normalize(None, estimated_input_bytes=input_bytes, estimated_output_bytes=output_bytes),
+                task_name=self.task_name, provider=self.settings.llm_provider,
+                model=self.settings.model_for_task(self.task_name, self.explicit_model), streaming=True,
+                status="success" if completed else "cancelled" if output_bytes else "error",
+                duration_ms=None, retry_count=self.settings.llm_max_retries if last_error else 0,
+                error_code=type(last_error).__name__ if last_error else None,
+            )
 
     async def _iter_stream_deltas(self, resp: httpx.Response) -> AsyncIterator[str]:
         async for line in resp.aiter_lines():

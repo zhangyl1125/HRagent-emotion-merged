@@ -134,6 +134,16 @@ class Settings(BaseSettings):
     redis_max_connections: int = 50
     coach_report_max_concurrency_per_worker: int = 2
 
+    # Admin console and privacy-preserving usage analytics
+    admin_super_email: str = "aah5sgh@bosch.com"
+    admin_console_enabled: bool = True
+    admin_usage_tracking_enabled: bool = True
+    admin_usage_estimation_enabled: bool = True
+    admin_usage_retention_days: int = 365
+    admin_api_audit_retention_days: int = 90
+    admin_export_max_rows: int = 50000
+    admin_default_range_days: int = 7
+
     # Redis cache
     redis_url: str = ""
     cache_enabled: bool = True

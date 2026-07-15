@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from threading import BoundedSemaphore, Lock
 from typing import Any, Iterator
 
@@ -11,6 +12,8 @@ from backend.config.settings import get_settings
 
 _CONNECTION_LIMITS: dict[tuple[str, int], BoundedSemaphore] = {}
 _CONNECTION_LIMITS_LOCK = Lock()
+_INITIALIZED_SCHEMAS: set[str] = set()
+_SCHEMA_INIT_LOCK = Lock()
 
 
 def _connection_limit(database_url: str, size: int) -> BoundedSemaphore:
@@ -38,7 +41,16 @@ class PostgresRepository:
             raise RuntimeError("DATABASE_URL 未配置。PostgreSQL + pgvector 模式必须显式配置 DATABASE_URL。")
         self._connection_limit = _connection_limit(self.database_url, self.settings.db_pool_size)
         if initialize:
+            self._ensure_schema()
+
+    def _ensure_schema(self) -> None:
+        if self.database_url in _INITIALIZED_SCHEMAS:
+            return
+        with _SCHEMA_INIT_LOCK:
+            if self.database_url in _INITIALIZED_SCHEMAS:
+                return
             self.init_schema()
+            _INITIALIZED_SCHEMAS.add(self.database_url)
 
     def _connect(self):
         try:
@@ -66,6 +78,10 @@ class PostgresRepository:
 
     def init_schema(self) -> None:
         with self.connection() as conn:
+            conn.execute(
+                "SELECT pg_advisory_xact_lock(hashtext(%s), hashtext(%s))",
+                ("hragent", "schema-init-v1"),
+            )
             try:
                 conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
                 conn.execute("CREATE EXTENSION IF NOT EXISTS citext")
@@ -124,9 +140,10 @@ class PostgresRepository:
             conn.execute(
                 """
                 INSERT INTO auth_whitelist (email, enabled, note)
-                VALUES ('aah5sgh@bosch.com', TRUE, 'administrator account')
-                ON CONFLICT (email) DO UPDATE SET enabled = EXCLUDED.enabled
-                """
+                VALUES (%s, TRUE, 'administrator account')
+                ON CONFLICT (email) DO UPDATE SET enabled = EXCLUDED.enabled, updated_at = NOW()
+                """,
+                (self.settings.admin_super_email.strip().lower(),),
             )
             conn.execute(
                 """
@@ -249,6 +266,11 @@ class PostgresRepository:
                     "CREATE INDEX IF NOT EXISTS idx_kb_chunks_embedding_hnsw "
                     "ON kb_chunks USING hnsw (embedding vector_cosine_ops)"
                 )
+
+            migration = Path(__file__).resolve().parents[1] / "db" / "migrations" / "0003_add_admin_usage_tables.sql"
+            for statement in migration.read_text(encoding="utf-8").split(";"):
+                if statement.strip():
+                    conn.execute(statement)
 
     @staticmethod
     def now() -> str:
