@@ -4,9 +4,9 @@
   "timezone": "browser",
   "schemaVersion": 41,
   "version": 3,
-  "refresh": "10s",
+  "refresh": "30s",
   "time": {
-    "from": "now-1h",
+    "from": "now-5m",
     "to": "now"
   },
   "templating": {
@@ -163,7 +163,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({compose_project=\"hragent-05\", service=\"backend\"} |~ \"(?i)(documents\\\\.text\\\\.failed|guidance.*failed|rehearsal.*failed|redis.*failed)\" [5m])) or vector(0)"
+          "expr": "sum(count_over_time({compose_project=\"hragent-05\", service=\"backend\"} |~ \"(?i)(documents\\\\.text\\\\.failed|guidance.*failed|rehearsal.*failed|reports?.*failed|coach.*failed|复盘生成失败|redis.*failed)\" [5m])) or vector(0)"
         }
       ],
       "options": {
@@ -224,7 +224,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{compose_project=\"hragent-05\", service=~\"$service\"} |= \"$search\""
+          "expr": "{compose_project=\"hragent-05\", service=~\"$service\"} |= \"$search\"",
+          "maxLines": 200
         }
       ],
       "options": {
@@ -269,6 +270,54 @@
         "w": 24,
         "h": 10
       }
+    },
+    {
+      "id": 8,
+      "title": "Total Input Tokens",
+      "type": "stat",
+      "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COALESCE(sum(input_tokens), 0)::bigint AS \"Input Tokens\" FROM llm_usage_events WHERE $__timeFilter(created_at)"}],
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"x": 0, "y": 36, "w": 6, "h": 6}
+    },
+    {
+      "id": 9,
+      "title": "Total Output Tokens",
+      "type": "stat",
+      "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COALESCE(sum(output_tokens), 0)::bigint AS \"Output Tokens\" FROM llm_usage_events WHERE $__timeFilter(created_at)"}],
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"x": 6, "y": 36, "w": 6, "h": 6}
+    },
+    {
+      "id": 10,
+      "title": "Total Tokens (Input + Output)",
+      "type": "stat",
+      "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COALESCE(sum(COALESCE(input_tokens, 0) + COALESCE(output_tokens, 0)), 0)::bigint AS \"Total Tokens\" FROM llm_usage_events WHERE $__timeFilter(created_at)"}],
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"x": 12, "y": 36, "w": 6, "h": 6}
+    },
+    {
+      "id": 11,
+      "title": "DeepSeek V4-Pro Total Cost",
+      "description": "单位：人民币。按输入 ¥12、缓存输入 ¥1、输出 ¥24／百万 Token 估算，仅统计 deepseek-v4-pro。",
+      "type": "stat",
+      "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT round(COALESCE(sum((GREATEST(COALESCE(input_tokens, 0) - COALESCE(cached_tokens, 0), 0) * 12.0 + COALESCE(cached_tokens, 0) * 1.0 + COALESCE(output_tokens, 0) * 24.0) / 1000000.0), 0), 6) AS \"Cost (¥)\" FROM llm_usage_events WHERE $__timeFilter(created_at) AND lower(model) = 'deepseek-v4-pro'"}],
+      "fieldConfig": {"defaults": {"unit": "currencyCNY"}, "overrides": []},
+      "gridPos": {"x": 18, "y": 36, "w": 6, "h": 6}
+    },
+    {
+      "id": 12,
+      "title": "DeepSeek V4-Pro Cost by User",
+      "description": "单位：人民币。缓存输入按 ¥1／百万 Token，非缓存输入按 ¥12／百万 Token，输出按 ¥24／百万 Token。",
+      "type": "table",
+      "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COALESCE(NULLIF(u.display_name, ''), CASE WHEN e.user_id IS NOT NULL THEN 'User ' || left(e.user_id::text, 8) ELSE 'Unknown' END) AS \"User\", COALESCE(sum(e.input_tokens), 0)::bigint AS \"Input Tokens\", COALESCE(sum(e.output_tokens), 0)::bigint AS \"Output Tokens\", COALESCE(sum(e.total_tokens), 0)::bigint AS \"Total Tokens\", round(COALESCE(sum((GREATEST(COALESCE(e.input_tokens, 0) - COALESCE(e.cached_tokens, 0), 0) * 12.0 + COALESCE(e.cached_tokens, 0) * 1.0 + COALESCE(e.output_tokens, 0) * 24.0) / 1000000.0), 0), 6) AS \"Cost (¥)\" FROM llm_usage_events e LEFT JOIN app_users u ON u.id = e.user_id WHERE $__timeFilter(e.created_at) AND lower(e.model) = 'deepseek-v4-pro' GROUP BY 1 ORDER BY \"Cost (¥)\" DESC, \"User\" ASC"}],
+      "fieldConfig": {"defaults": {}, "overrides": [{"matcher": {"id": "byName", "options": "Cost (¥)"}, "properties": [{"id": "unit", "value": "currencyCNY"}]}]},
+      "options": {"showHeader": true, "cellHeight": "sm"},
+      "gridPos": {"x": 0, "y": 42, "w": 24, "h": 10}
     }
   ]
 }

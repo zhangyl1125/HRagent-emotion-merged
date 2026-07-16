@@ -10,7 +10,6 @@ import type {
   RehearsalMessageOptions,
   SessionState,
   SetupOptions,
-  TtsSpeechOptions,
 } from '../types/domain';
 import { getApiBase } from '../utils/format';
 
@@ -99,32 +98,6 @@ async function requestForm<T>(
   }
 }
 
-async function requestBlob(path: string, options: RequestInit & { timeoutMs?: number | null } = {}): Promise<Blob> {
-  const controller = new AbortController();
-  const { timeoutMs = REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
-  const timeout = typeof timeoutMs === 'number' && timeoutMs > 0
-    ? window.setTimeout(() => controller.abort(), timeoutMs)
-    : null;
-  try {
-    const response = await fetch(getApiBase() + path, {
-      ...fetchOptions,
-      signal: controller.signal,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(fetchOptions.headers || {}),
-      },
-    });
-    if (!response.ok) {
-      redirectToLoginOnUnauthorized(response, path);
-      throw new Error(detailFromPayload(await parseResponse(response)));
-    }
-    return await response.blob();
-  } finally {
-    if (timeout !== null) window.clearTimeout(timeout);
-  }
-}
-
 export async function streamSse<T = Record<string, unknown>>(
   path: string,
   options: RequestInit,
@@ -195,16 +168,6 @@ export const api = {
     formData.append('language', language);
     return requestForm<AsrTranscribeResponse>('/asr/transcribe', formData);
   },
-  synthesizeSpeech: (text: string, options?: TtsSpeechOptions) => requestBlob('/tts/speech', {
-    method: 'POST',
-    body: JSON.stringify({
-      text,
-      voice: options?.voice || undefined,
-      response_format: options?.responseFormat || undefined,
-      speed: options?.speed || undefined,
-    }),
-    timeoutMs: null,
-  }),
   uploadText: (sessionId: string | null, text: string) => requestJson<DocumentRecord>('/documents/text', {
     method: 'POST',
     body: JSON.stringify({ session_id: sessionId, text, filename: 'employee_profile_combined.txt' }),

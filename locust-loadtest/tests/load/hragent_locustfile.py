@@ -36,8 +36,7 @@ HRagent-05 Locust load test file.
   HRAGENT_READ_ENDPOINTS            逗号分隔的 GET 接口列表（用于读压测）
   HRAGENT_POST_ENDPOINTS_JSON       JSON 列表，定义 POST 业务接口（用于写压测）
   HRAGENT_FLOW_MODE                  basic 或 full；full 时 1 用户只跑一次完整流程
-  HRAGENT_FULL_FLOW_MESSAGES_MIN     full 模式每位用户最少预演轮数，默认: 5
-  HRAGENT_FULL_FLOW_MESSAGES_MAX     full 模式每位用户最多预演轮数，默认: 10
+  HRAGENT_FULL_FLOW_MESSAGE_COUNT    full 模式每位用户预演轮数，固定默认: 15
   HRAGENT_REPORT_TIMEOUT_SECONDS     复盘 SSE 的单次空闲读取超时(秒)，默认: 600
   HRAGENT_MAX_FAIL_RATIO            质量门禁-最大失败率，默认: 0.01 (1%)
   HRAGENT_MAX_AVG_MS                质量门禁-最大平均响应时间(ms)，默认: 800
@@ -531,10 +530,12 @@ class HRagentUser(HttpUser):
             self._post_json(f"/api/v1/setup/{session_id}/complete", {}, "POST /api/v1/setup/[session]/complete")
             self._post_guidance_stream(session_id)
             messages = self._load_test_messages()
-            min_turns = max(1, env_int("HRAGENT_FULL_FLOW_MESSAGES_MIN", 5))
-            max_turns = max(min_turns, env_int("HRAGENT_FULL_FLOW_MESSAGES_MAX", 10))
-            turn_count = min(len(messages), random.randint(min_turns, max_turns))
-            for message in messages[:turn_count]:
+            message_count = env_int("HRAGENT_FULL_FLOW_MESSAGE_COUNT", 15)
+            if message_count != 15:
+                raise RuntimeError("HRAGENT_FULL_FLOW_MESSAGE_COUNT must be exactly 15 for the full flow")
+            if len(messages) != 15:
+                raise RuntimeError("full flow must define exactly 15 rehearsal messages")
+            for message in messages:
                 self._post_json(
                     f"/api/v1/rehearsal/{session_id}/message",
                     {
@@ -792,6 +793,11 @@ class HRagentUser(HttpUser):
             "我们把负责人、截止时间和检查节点逐项确认一下。",
             "如果过程中出现新风险，请在检查点之前主动同步。",
             "最后确认一下：我们两周后复盘第一阶段结果，可以吗？",
+            "为了避免遗漏，我们把每项行动的完成标准也写清楚。",
+            "遇到跨部门依赖时，请先说明影响、需要的支持和期望完成时间。",
+            "我会在双周检查点跟进进展，也请你提前反馈偏差。",
+            "今天的结论是共同制定改进计划，不是简单追责，你是否还有补充？",
+            "谢谢你的坦诚沟通，我们按确认的行动项推进并在下次检查点复盘。",
         ]
 
 

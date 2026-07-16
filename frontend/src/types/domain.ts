@@ -193,12 +193,6 @@ export interface AsrTranscribeResponse {
   provider?: string;
 }
 
-export interface TtsSpeechOptions {
-  voice?: string | null;
-  responseFormat?: string | null;
-  speed?: number | null;
-}
-
 export interface RehearsalMessageOptions {
   inputMode?: 'text' | 'voice_asr';
   audioEmotion?: string | null;

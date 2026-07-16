@@ -396,10 +396,6 @@ textarea { width: 100%; min-height: 180px; padding: 14px; resize: vertical; line
 .chat-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 5px; }
 .chat-meta { display: flex; align-items: center; gap: 8px; }
 .chat-msg.manager .chat-meta { justify-content: flex-end; }
-.tts-button { width: 26px; height: 26px; display: inline-grid; place-items: center; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: #fff; color: var(--bosch-blue-dark); }
-.tts-button:hover:not(:disabled) { border-color: #9fcbe0; background: #eef8fd; }
-.tts-button:disabled { cursor: wait; opacity: .55; }
-.tts-button svg { width: 16px; height: 16px; fill: currentColor; }
 .chat-msg.manager .chat-content { text-align: right; }
 .chat-bubble { padding: 12px 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: #fff; line-height: 1.65; text-align: left; white-space: pre-wrap; }
 .chat-msg.manager .chat-bubble { background: #e8f4fb; border-color: #cde5f2; }
@@ -429,34 +425,6 @@ textarea { width: 100%; min-height: 180px; padding: 14px; resize: vertical; line
 .context-facts span { color: var(--text-muted); font-size: 12px; font-weight: 800; }
 .context-facts strong { overflow-wrap: anywhere; }
 .typing-text { color: var(--text-muted); }
-
-.voice-chat-msg .chat-content { max-width: min(620px, 100%); }
-.voice-stack { display: flex; flex-direction: column; align-items: flex-start; }
-.voice-bubble { min-width: 124px; max-width: 230px; height: 48px; display: inline-flex; align-items: center; gap: 10px; padding: 0 16px; border: 1px solid transparent; border-radius: 20px; font-size: 14px; font-weight: 800; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
-.voice-bubble:hover:not(:disabled) { transform: translateY(-1px); }
-.voice-bubble:disabled { cursor: wait; opacity: .68; }
-.employee-voice { color: var(--bosch-blue-dark); background: #f2f5f7; border-color: #e2e8ec; border-top-left-radius: 8px; }
-.employee-voice.is-active { background: #e8f4fb; border-color: #cde5f2; }
-.voice-duration { min-width: 26px; font-variant-numeric: tabular-nums; }
-.voice-wave { display: flex; align-items: center; gap: 3px; color: currentColor; }
-.voice-wave span { width: 3px; border-radius: 999px; background: currentColor; opacity: .82; }
-.voice-wave span:nth-child(1) { height: 10px; }
-.voice-wave span:nth-child(2) { height: 17px; }
-.voice-wave span:nth-child(3) { height: 24px; }
-.voice-wave span:nth-child(4) { height: 14px; }
-.voice-wave span:nth-child(5) { height: 20px; }
-.voice-wave.active span { animation: voicePulse .82s ease-in-out infinite; }
-.voice-wave.active span:nth-child(2) { animation-delay: .08s; }
-.voice-wave.active span:nth-child(3) { animation-delay: .16s; }
-.voice-wave.active span:nth-child(4) { animation-delay: .24s; }
-.voice-wave.active span:nth-child(5) { animation-delay: .32s; }
-@keyframes voicePulse { 0%, 100% { transform: scaleY(.62); opacity: .55; } 50% { transform: scaleY(1.16); opacity: 1; } }
-.play-btn { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
-.pause-btn { width: 14px; height: 17px; border-left: 5px solid currentColor; border-right: 5px solid currentColor; }
-.voice-text { margin-top: 8px; max-width: min(560px, 88%); min-height: 46px; padding: 12px 15px; border: 1px solid #e4e9ed; border-radius: 18px; border-top-left-radius: 6px; background: #f7f9fa; color: #697684; font-size: 15px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
-.voice-actions { margin-top: 7px; display: flex; gap: 14px; font-size: 12px; color: var(--bosch-blue-dark); }
-.voice-actions button { min-height: 24px; border: 0; background: transparent; color: inherit; font: inherit; padding: 0; }
-.voice-actions button:hover { text-decoration: underline; }
 .emotion-badge { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: #f8fafb; }
 .emotion-badge-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 .emotion-badge-head span { color: var(--text-muted); font-size: 12px; font-weight: 800; }

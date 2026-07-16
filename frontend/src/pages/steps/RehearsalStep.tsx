@@ -2,17 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { useRealtimeAsr } from '../../hooks/useRealtimeAsr';
-import { useTtsPlayback } from '../../hooks/useTtsPlayback';
 import type { ConversationTurn } from '../../types/domain';
 import { firstText } from '../../utils/format';
-
-function VoiceWave({ active }: { active?: boolean }) {
-  return (
-    <span className={`voice-wave ${active ? 'active' : ''}`} aria-hidden="true">
-      <span /><span /><span /><span /><span />
-    </span>
-  );
-}
 
 function isRecoverableAsrError(message = '') {
   return (
@@ -27,26 +18,11 @@ function ChatMessage({
   turn,
   isStreaming,
   employeeName,
-  onSpeak,
-  onStopSpeak,
-  ttsBusy,
-  ttsPlaying,
-  ttsActiveText,
-  ttsDisplayText,
-  ttsDuration,
 }: {
   turn: ConversationTurn;
   isStreaming?: boolean;
   employeeName: string;
-  onSpeak?: (text: string) => void;
-  onStopSpeak?: () => void;
-  ttsBusy?: boolean;
-  ttsPlaying?: boolean;
-  ttsActiveText?: string;
-  ttsDisplayText?: string;
-  ttsDuration?: number;
 }) {
-  const [textHidden, setTextHidden] = useState(false);
   const speaker = turn.speaker || 'system';
   if (speaker === 'system') {
     return (
@@ -59,42 +35,6 @@ function ChatMessage({
   const isManager = speaker === 'manager' || speaker === 'you';
   const employeeLabel = employeeName ? `${employeeName}（员工）` : '员工';
   const text = String(turn.text || '');
-  const isActiveVoice = Boolean(!isManager && text && ttsActiveText === text && (ttsBusy || ttsPlaying));
-  const voiceText = isActiveVoice ? (ttsDisplayText || text) : text;
-  const estimatedSeconds = Math.max(2, Math.round((ttsDuration && ttsDuration > 0 ? ttsDuration : Math.max(2, text.length / 4))));
-
-  if (!isManager && text) {
-    return (
-      <div className="chat-msg employee voice-chat-msg">
-        <div className="chat-avatar">{employeeName.slice(0, 1).toUpperCase() || '员'}</div>
-        <div className="chat-content">
-          <div className="chat-meta"><span>{employeeLabel}</span></div>
-          <div className="voice-stack left">
-            <button
-              className={`voice-bubble employee-voice ${isActiveVoice ? 'is-active' : ''}`}
-              type="button"
-              disabled={ttsBusy && !isActiveVoice}
-              onClick={() => {
-                if (isActiveVoice && ttsPlaying) onStopSpeak?.();
-                else onSpeak?.(text);
-              }}
-              aria-label={isActiveVoice && ttsPlaying ? '暂停员工语音' : '播放员工语音'}
-              title={isActiveVoice && ttsPlaying ? '暂停员工语音' : '播放员工语音'}
-            >
-              <span className="voice-duration">{estimatedSeconds}s</span>
-              <VoiceWave active={isActiveVoice && ttsPlaying} />
-              <span className={isActiveVoice && ttsPlaying ? 'pause-btn' : 'play-btn'} aria-hidden="true" />
-            </button>
-            {!textHidden && <div className="voice-text">{voiceText}</div>}
-            <div className="voice-actions">
-              <button type="button" onClick={() => setTextHidden((value) => !value)}>{textHidden ? '显示文本' : '隐藏文本'}</button>
-              <button type="button" onClick={() => void navigator.clipboard?.writeText(text)}>复制</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={`chat-msg ${isManager ? 'manager' : 'employee'}`}>
@@ -131,7 +71,6 @@ export default function RehearsalStep() {
   const [runtimeNote, setRuntimeNote] = useState('');
   const [lastAudioEmotion, setLastAudioEmotion] = useState<string | null>(null);
   const [lastInputMode, setLastInputMode] = useState<'text' | 'voice_asr'>('text');
-  const [pendingAutoTts, setPendingAutoTts] = useState(false);
   const chatListRef = useRef<HTMLDivElement | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const turns = liveConversation || session?.conversation || [];
@@ -168,8 +107,6 @@ export default function RehearsalStep() {
       if (!isRecoverableAsrError(msg)) showToast(msg, 'error');
     },
   });
-  const tts = useTtsPlayback((msg) => showToast(msg, 'error'));
-
   useEffect(() => {
     const node = chatListRef.current;
     if (!node) return;
@@ -192,22 +129,11 @@ export default function RehearsalStep() {
     textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }, [message]);
 
-
-  useEffect(() => {
-    if (!pendingAutoTts || rehearsalStreaming) return;
-    const lastTurn = turns[turns.length - 1];
-    if (!lastTurn || lastTurn.speaker !== 'employee' || !lastTurn.text) return;
-    tts.enqueueStreamText(String(lastTurn.text), true);
-    setPendingAutoTts(false);
-  }, [pendingAutoTts, rehearsalStreaming, turns, tts.enqueueStreamText]);
-
   const submit = async () => {
     if (asr.isRecording) await asr.stop();
     const text = message.trim();
     if (!text) return;
     setMessage('');
-    tts.resetStream();
-    setPendingAutoTts(true);
     await sendMessage(text, { inputMode: lastInputMode, audioEmotion: lastAudioEmotion });
     setLastAudioEmotion(null);
     setLastInputMode('text');
@@ -256,13 +182,6 @@ export default function RehearsalStep() {
                 key={String(turn.metadata?.stream_id || turn.turn_index || `${turn.speaker}-${index}`)}
                 turn={turn}
                 employeeName={employeeName}
-                onSpeak={(text) => void tts.play(text)}
-                onStopSpeak={tts.stop}
-                ttsBusy={tts.loading}
-                ttsPlaying={tts.playing}
-                ttsActiveText={tts.activeText}
-                ttsDisplayText={tts.displayText}
-                ttsDuration={tts.duration}
                 isStreaming={Boolean(liveConversation && rehearsalStreaming && index === turns.length - 1 && turn.speaker === 'employee' && !turn.text)}
               />
             ))}
@@ -306,10 +225,7 @@ export default function RehearsalStep() {
           </div>
           {asr.isRecording && <div className="asr-hint">正在实时识别语音，文字会同步进入输入框。</div>}
           {asr.isConnecting && <div className="asr-hint">正在连接实时语音识别服务...</div>}
-          {tts.loading && <div className="asr-hint">正在生成员工回复语音...</div>}
-          {tts.playing && <div className="asr-hint">正在播放员工回复。</div>}
           {asr.status === 'error' && asr.error && !isRecoverableAsrError(asr.error) && <div className="asr-hint error">{asr.error}</div>}
-          {tts.status === 'error' && tts.error && <div className="asr-hint error">{tts.error}</div>}
         </section>
 
         <aside className="soft-card conversation-context-panel summary-panel">
