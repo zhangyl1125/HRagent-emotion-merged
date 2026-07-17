@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import httpx
@@ -7,6 +8,7 @@ import httpx
 from backend.config.settings import get_settings
 from backend.exceptions.llm_errors import LLMError
 from backend.services.model_api_auth import ModelAPIAuth
+from backend.services.usage_tracking_service import UsageTrackingService
 
 
 class RerankService:
@@ -34,11 +36,40 @@ class RerankService:
             payload["top_n"] = top_n
         headers = self.auth.sync_headers(self.settings.rerank_api_key or self.settings.chat_api_key)
         headers.setdefault("Content-Type", "application/json")
-        with httpx.Client(timeout=self.settings.llm_timeout_seconds) as client:
-            resp = client.post(url, headers=headers, json=payload)
-            if resp.status_code >= 400:
-                raise LLMError(f"Rerank API HTTP {resp.status_code}: {resp.text[:1000]}")
-            return self._extract_ranked_indexes(resp.json())
+        input_bytes = len(query.encode("utf-8")) + sum(len(document.encode("utf-8")) for document in documents)
+        started_at = time.monotonic()
+        try:
+            with httpx.Client(timeout=self.settings.llm_timeout_seconds) as client:
+                resp = client.post(url, headers=headers, json=payload)
+                if resp.status_code >= 400:
+                    raise LLMError(f"Rerank API HTTP {resp.status_code}: {resp.text[:1000]}")
+                data = resp.json()
+                ranked = self._extract_ranked_indexes(data)
+        except Exception as exc:
+            UsageTrackingService().record(
+                usage=UsageTrackingService.normalize_input_only(None, estimated_input_bytes=input_bytes),
+                task_name="rerank", provider=self.settings.rerank_provider,
+                model=self.settings.rerank_model, streaming=False, status="error",
+                duration_ms=round((time.monotonic() - started_at) * 1000),
+                error_code=type(exc).__name__,
+                usage_metadata={"usage_kind": "rerank", "document_count": len(documents)},
+            )
+            raise
+        UsageTrackingService().record(
+            usage=UsageTrackingService.normalize_input_only(self._extract_usage(data), estimated_input_bytes=input_bytes),
+            task_name="rerank", provider=self.settings.rerank_provider,
+            model=self.settings.rerank_model, streaming=False, status="success",
+            duration_ms=round((time.monotonic() - started_at) * 1000),
+            usage_metadata={"usage_kind": "rerank", "document_count": len(documents)},
+        )
+        return ranked
+
+    @staticmethod
+    def _extract_usage(data: dict[str, Any]) -> dict[str, Any] | None:
+        usage = data.get("usage")
+        if usage is None and isinstance(data.get("data"), dict):
+            usage = data["data"].get("usage")
+        return usage if isinstance(usage, dict) else None
 
     @staticmethod
     def _extract_ranked_indexes(data: dict[str, Any]) -> list[tuple[int, float]]:

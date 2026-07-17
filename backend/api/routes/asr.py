@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from typing import Any
 
 import httpx
@@ -9,6 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, WebSocket,
 
 from backend.config.settings import get_settings
 from backend.services.asr_service import AsrConfigurationError, QwenRealtimeAsrProxy
+from backend.services.usage_tracking_service import UsageTrackingService
 
 router = APIRouter(tags=["asr"])
 
@@ -36,6 +38,29 @@ def _extract_transcript(payload: Any) -> str:
         return "".join(part for part in parts if part)
     return ""
 
+
+def _extract_audio_duration_seconds(payload: Any) -> float | None:
+    if not isinstance(payload, dict):
+        return None
+    for key in ("audio_duration_seconds", "duration_seconds", "audio_duration", "duration"):
+        value = payload.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
+            return float(value)
+    data = payload.get("data")
+    return _extract_audio_duration_seconds(data) if isinstance(data, dict) else None
+
+
+def _record_asr_usage(*, provider: str, model: str, audio_seconds: float | None, duration_ms: int) -> None:
+    metadata: dict[str, str | float] = {"usage_kind": "audio"}
+    if audio_seconds is not None:
+        metadata["audio_seconds"] = round(audio_seconds, 3)
+        if model.lower() == "qwen3-asr-flash":
+            metadata["cost_cny"] = round(audio_seconds * 0.00022, 8)
+    UsageTrackingService().record(
+        usage=UsageTrackingService.normalize(None), task_name="asr_transcribe",
+        provider=provider, model=model, streaming=False, status="success",
+        duration_ms=duration_ms, usage_metadata=metadata,
+    )
 
 @router.post("/asr/transcribe")
 async def asr_transcribe(
@@ -65,6 +90,7 @@ async def asr_transcribe(
         ),
     }
     timeout = httpx.Timeout(settings.asr_session_timeout_seconds)
+    started_at = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(settings.asr_http_url, headers=headers, data=data, files=files)
@@ -84,6 +110,11 @@ async def asr_transcribe(
     transcript = _extract_transcript(payload)
     if not transcript:
         raise HTTPException(status_code=502, detail="语音转写服务未返回可用文本。")
+    audio_seconds = _extract_audio_duration_seconds(payload)
+    _record_asr_usage(
+        provider=settings.asr_provider, model=settings.asr_http_model,
+        audio_seconds=audio_seconds, duration_ms=round((time.monotonic() - started_at) * 1000),
+    )
     return {
         "text": transcript,
         "audio_emotion": None,
@@ -144,3 +175,9 @@ async def asr_realtime(websocket: WebSocket) -> None:
         if receive_task and not receive_task.done():
             receive_task.cancel()
         await proxy.close()
+        audio_seconds = proxy.audio_seconds
+        if audio_seconds:
+            _record_asr_usage(
+                provider=settings.asr_provider, model=settings.asr_model,
+                audio_seconds=audio_seconds, duration_ms=round(audio_seconds * 1000),
+            )

@@ -24,6 +24,14 @@ class QwenRealtimeAsrProxy:
         self._qwen_ws: Any | None = None
         self._started_at = time.monotonic()
         self._closed = False
+        self._audio_bytes = 0
+
+    @property
+    def audio_seconds(self) -> float | None:
+        if self.settings.asr_input_audio_format.lower() != "pcm":
+            return None
+        bytes_per_second = self.settings.asr_sample_rate * 2
+        return self._audio_bytes / bytes_per_second if bytes_per_second > 0 else None
 
     def validate(self) -> None:
         if not self.settings.asr_enabled:
@@ -121,6 +129,7 @@ class QwenRealtimeAsrProxy:
             raise TimeoutError("ASR session exceeded maximum duration")
         if not pcm_bytes:
             return
+        self._audio_bytes += len(pcm_bytes)
         audio_b64 = base64.b64encode(pcm_bytes).decode("ascii")
         await self._send_json({
             "event_id": f"audio_{int(time.time() * 1000)}",

@@ -3,8 +3,8 @@
   "title": "HRagent Demo Logs",
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 3,
-  "refresh": "30s",
+  "version": 6,
+  "refresh": "10s",
   "time": {
     "from": "now-5m",
     "to": "now"
@@ -71,7 +71,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({compose_project=\"hragent-05\"} |~ \"(?i)(error|exception|critical|traceback|failed)\" [5m]))"
+          "expr": "sum(count_over_time({compose_project=\"hragent-05\", level=~\"(?i)(error|critical|exception|fatal)\"}[5m]))"
         }
       ],
       "gridPos": {
@@ -92,7 +92,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (service) (rate({compose_project=\"hragent-05\"} |~ \"(?i)(error|exception|critical|traceback|failed)\" [5m]))"
+          "expr": "sum by (service) (rate({compose_project=\"hragent-05\", level=~\"(?i)(error|critical|exception|fatal)\"}[5m]))"
         }
       ],
       "gridPos": {
@@ -104,7 +104,7 @@
     },
     {
       "id": 4,
-      "title": "Token Usage (5m)",
+      "title": "Token Usage by Provider and Model (5m)",
       "type": "timeseries",
       "datasource": {
         "type": "postgres",
@@ -114,7 +114,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT $__timeGroupAlias(created_at, '5m'), COALESCE(sum(total_tokens), 0)::double precision AS \"Total Tokens\" FROM llm_usage_events WHERE $__timeFilter(created_at) GROUP BY 1 ORDER BY 1"
+          "rawSql": "SELECT $__timeGroupAlias(created_at, '5m'), concat(provider, ' / ', model) AS metric, COALESCE(sum(total_tokens), 0)::double precision AS \"Total Tokens\" FROM llm_usage_events WHERE $__timeFilter(created_at) AND COALESCE(usage_metadata->> 'usage_kind', '') <> 'audio' GROUP BY 1, 2 ORDER BY 1, 2"
         }
       ],
       "gridPos": {
@@ -163,7 +163,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({compose_project=\"hragent-05\", service=\"backend\"} |~ \"(?i)(documents\\\\.text\\\\.failed|guidance.*failed|rehearsal.*failed|reports?.*failed|coach.*failed|复盘生成失败|redis.*failed)\" [5m])) or vector(0)"
+          "expr": "sum(count_over_time({compose_project=\"hragent-05\", service=\"backend\", level=~\"(?i)(error|critical|exception|fatal)\"} |~ \"(?i)(documents\\\\.text\\\\.failed|guidance.*failed|rehearsal.*failed|reports?.*failed|coach.*failed|复盘生成失败|redis.*failed)\" [5m])) or vector(0)"
         }
       ],
       "options": {
@@ -253,7 +253,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT COALESCE(NULLIF(u.display_name, ''), CASE WHEN e.user_id IS NOT NULL THEN 'User ' || left(e.user_id::text, 8) ELSE 'Unknown' END) AS \"User\", COALESCE(sum(e.input_tokens), 0)::bigint AS \"Input Tokens\", COALESCE(sum(e.output_tokens), 0)::bigint AS \"Output Tokens\", COALESCE(sum(e.total_tokens), 0)::bigint AS \"Total Tokens\", count(*)::bigint AS \"LLM Calls\", max(e.created_at) AS \"Last Used At\" FROM llm_usage_events e LEFT JOIN app_users u ON u.id = e.user_id WHERE $__timeFilter(e.created_at) GROUP BY 1 ORDER BY \"Total Tokens\" DESC, \"User\" ASC"
+          "rawSql": "SELECT COALESCE(NULLIF(u.display_name, ''), CASE WHEN e.user_id IS NOT NULL THEN 'User ' || left(e.user_id::text, 8) ELSE 'Unknown' END) AS \"User\", COALESCE(sum(e.input_tokens), 0)::bigint AS \"Input Tokens\", COALESCE(sum(e.output_tokens), 0)::bigint AS \"Output Tokens\", COALESCE(sum(e.total_tokens), 0)::bigint AS \"Total Tokens\", count(*)::bigint AS \"LLM Calls\", max(e.created_at) AS \"Last Used At\" FROM llm_usage_events e LEFT JOIN app_users u ON u.id = e.user_id WHERE $__timeFilter(e.created_at) GROUP BY e.user_id, u.display_name ORDER BY \"Total Tokens\" DESC, \"User\" ASC"
         }
       ],
       "options": {
@@ -300,24 +300,44 @@
     },
     {
       "id": 11,
-      "title": "DeepSeek V4-Pro Total Cost",
-      "description": "单位：人民币。按输入 ¥12、缓存输入 ¥1、输出 ¥24／百万 Token 估算，仅统计 deepseek-v4-pro。",
+      "title": "Known Total Cost",
+      "description": "单位：人民币。合计 DeepSeek V4-Pro、qwen3-rerank、text-embedding-v3 与已知 ASR 费用；Ollama 本地模型不计成本。",
       "type": "stat",
       "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
-      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT round(COALESCE(sum((GREATEST(COALESCE(input_tokens, 0) - COALESCE(cached_tokens, 0), 0) * 12.0 + COALESCE(cached_tokens, 0) * 1.0 + COALESCE(output_tokens, 0) * 24.0) / 1000000.0), 0), 6) AS \"Cost (¥)\" FROM llm_usage_events WHERE $__timeFilter(created_at) AND lower(model) = 'deepseek-v4-pro'"}],
-      "fieldConfig": {"defaults": {"unit": "currencyCNY"}, "overrides": []},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT round(COALESCE(sum(CASE WHEN lower(model) = 'deepseek-v4-pro' THEN (GREATEST(COALESCE(input_tokens, 0) - COALESCE(cached_tokens, 0), 0) * 12.0 + COALESCE(cached_tokens, 0) * 1.0 + COALESCE(output_tokens, 0) * 24.0) / 1000000.0 WHEN lower(model) IN ('qwen3-rerank', 'text-embedding-v3') THEN COALESCE(input_tokens, total_tokens, 0) * 0.5 / 1000000.0 ELSE 0 END + COALESCE(NULLIF(usage_metadata->> 'cost_cny', '')::numeric, 0)), 0), 6) AS \"Cost (¥)\" FROM llm_usage_events WHERE $__timeFilter(created_at)"}],
+      "fieldConfig": {"defaults": {"unit": "prefix:¥"}, "overrides": []},
       "gridPos": {"x": 18, "y": 36, "w": 6, "h": 6}
     },
     {
       "id": 12,
-      "title": "DeepSeek V4-Pro Cost by User",
-      "description": "单位：人民币。缓存输入按 ¥1／百万 Token，非缓存输入按 ¥12／百万 Token，输出按 ¥24／百万 Token。",
+      "title": "Usage and Cost by User and Model",
+      "description": "每位用户包含各 Provider/模型明细及 TOTAL 汇总行；Ollama 本地模型保留用量，费用为 0。",
       "type": "table",
       "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
-      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COALESCE(NULLIF(u.display_name, ''), CASE WHEN e.user_id IS NOT NULL THEN 'User ' || left(e.user_id::text, 8) ELSE 'Unknown' END) AS \"User\", COALESCE(sum(e.input_tokens), 0)::bigint AS \"Input Tokens\", COALESCE(sum(e.output_tokens), 0)::bigint AS \"Output Tokens\", COALESCE(sum(e.total_tokens), 0)::bigint AS \"Total Tokens\", round(COALESCE(sum((GREATEST(COALESCE(e.input_tokens, 0) - COALESCE(e.cached_tokens, 0), 0) * 12.0 + COALESCE(e.cached_tokens, 0) * 1.0 + COALESCE(e.output_tokens, 0) * 24.0) / 1000000.0), 0), 6) AS \"Cost (¥)\" FROM llm_usage_events e LEFT JOIN app_users u ON u.id = e.user_id WHERE $__timeFilter(e.created_at) AND lower(e.model) = 'deepseek-v4-pro' GROUP BY 1 ORDER BY \"Cost (¥)\" DESC, \"User\" ASC"}],
-      "fieldConfig": {"defaults": {}, "overrides": [{"matcher": {"id": "byName", "options": "Cost (¥)"}, "properties": [{"id": "unit", "value": "currencyCNY"}]}]},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COALESCE(NULLIF(u.display_name, ''), CASE WHEN e.user_id IS NOT NULL THEN 'User ' || left(e.user_id::text, 8) ELSE 'Unknown' END) AS \"User\", CASE WHEN GROUPING(e.provider) = 1 THEN 'TOTAL' ELSE e.provider END AS \"Provider\", CASE WHEN GROUPING(e.model) = 1 THEN 'TOTAL' ELSE e.model END AS \"Model\", COALESCE(sum(e.input_tokens), 0)::bigint AS \"Input Tokens\", COALESCE(sum(e.output_tokens), 0)::bigint AS \"Output Tokens\", COALESCE(sum(e.total_tokens), 0)::bigint AS \"Total Tokens\", round(COALESCE(sum(CASE WHEN lower(e.model) = 'deepseek-v4-pro' THEN (GREATEST(COALESCE(e.input_tokens, 0) - COALESCE(e.cached_tokens, 0), 0) * 12.0 + COALESCE(e.cached_tokens, 0) * 1.0 + COALESCE(e.output_tokens, 0) * 24.0) / 1000000.0 WHEN lower(e.model) IN ('qwen3-rerank', 'text-embedding-v3') THEN COALESCE(e.input_tokens, e.total_tokens, 0) * 0.5 / 1000000.0 ELSE 0 END + COALESCE(NULLIF(e.usage_metadata->> 'cost_cny', '')::numeric, 0)), 0), 6) AS \"Cost (¥)\", max(e.created_at) AS \"Last Used At\" FROM llm_usage_events e LEFT JOIN app_users u ON u.id = e.user_id WHERE $__timeFilter(e.created_at) GROUP BY GROUPING SETS ((e.user_id, u.display_name, e.provider, e.model), (e.user_id, u.display_name)) ORDER BY \"User\" ASC, GROUPING(e.provider) DESC, \"Total Tokens\" DESC, \"Provider\" ASC, \"Model\" ASC"}],
+      "fieldConfig": {"defaults": {}, "overrides": [{"matcher": {"id": "byName", "options": "Cost (¥)"}, "properties": [{"id": "unit", "value": "prefix:¥"}]}]},
       "options": {"showHeader": true, "cellHeight": "sm"},
       "gridPos": {"x": 0, "y": 42, "w": 24, "h": 10}
+    },
+    {
+      "id": 13,
+      "title": "Speech Input Usage",
+      "type": "table",
+      "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT e.provider AS \"Provider\", e.model AS \"Model\", round(COALESCE(sum(NULLIF(e.usage_metadata->> 'audio_seconds', '')::numeric), 0), 3) AS \"Audio Seconds\", round(COALESCE(sum(NULLIF(e.usage_metadata->> 'cost_cny', '')::numeric), 0), 6) AS \"Cost (¥)\", count(*)::bigint AS \"Requests\", max(e.created_at) AS \"Last Used At\" FROM llm_usage_events e WHERE $__timeFilter(e.created_at) AND e.usage_metadata->> 'usage_kind' = 'audio' GROUP BY 1, 2 ORDER BY \"Audio Seconds\" DESC"}],
+      "fieldConfig": {"defaults": {}, "overrides": [{"matcher": {"id": "byName", "options": "Cost (¥)"}, "properties": [{"id": "unit", "value": "prefix:¥"}]}]},
+      "options": {"showHeader": true, "cellHeight": "sm"},
+      "gridPos": {"x": 0, "y": 52, "w": 24, "h": 8}
+    },
+    {
+      "id": 14,
+      "title": "Usage and Cost by Provider and Model",
+      "type": "table",
+      "datasource": {"type": "postgres", "uid": "hragent-usage-postgres"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT e.provider AS \"Provider\", e.model AS \"Model\", COALESCE(sum(e.input_tokens), 0)::bigint AS \"Input Tokens\", COALESCE(sum(e.output_tokens), 0)::bigint AS \"Output Tokens\", COALESCE(sum(e.total_tokens), 0)::bigint AS \"Total Tokens\", count(*)::bigint AS \"Calls\", round(COALESCE(sum(CASE WHEN lower(e.model) = 'deepseek-v4-pro' THEN (GREATEST(COALESCE(e.input_tokens, 0) - COALESCE(e.cached_tokens, 0), 0) * 12.0 + COALESCE(e.cached_tokens, 0) * 1.0 + COALESCE(e.output_tokens, 0) * 24.0) / 1000000.0 WHEN lower(e.model) IN ('qwen3-rerank', 'text-embedding-v3') THEN COALESCE(e.input_tokens, e.total_tokens, 0) * 0.5 / 1000000.0 ELSE 0 END + COALESCE(NULLIF(e.usage_metadata->> 'cost_cny', '')::numeric, 0)), 0), 6) AS \"Cost (¥)\", max(e.created_at) AS \"Last Used At\" FROM llm_usage_events e WHERE $__timeFilter(e.created_at) GROUP BY 1, 2 ORDER BY \"Total Tokens\" DESC, \"Provider\" ASC"}],
+      "fieldConfig": {"defaults": {}, "overrides": [{"matcher": {"id": "byName", "options": "Cost (¥)"}, "properties": [{"id": "unit", "value": "prefix:¥"}]}]},
+      "options": {"showHeader": true, "cellHeight": "sm"},
+      "gridPos": {"x": 0, "y": 60, "w": 24, "h": 10}
     }
   ]
 }

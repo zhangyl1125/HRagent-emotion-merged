@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     runtime_data_dir: Path | None = None
     max_user_turns: int = 0
 
-    llm_provider: Literal["openai_compatible", "bosch_openai_compatible", "bosch_messages"]
+    llm_provider: Literal["openai_compatible", "bosch_openai_compatible", "bosch_messages", "ollama"]
     chat_api_base_url: str = ""
     chat_api_endpoint: str
     chat_api_key: str
@@ -245,7 +245,7 @@ class Settings(BaseSettings):
         return self._resolve_url(
             explicit_endpoint=self.chat_api_endpoint,
             base_url=self.chat_api_base_url,
-            default_path="/chat/messages" if self.llm_provider == "bosch_messages" else "/chat/completions",
+            default_path="/chat/messages" if self.llm_provider == "bosch_messages" else "/api/chat" if self.llm_provider == "ollama" else "/chat/completions",
         )
 
     @property

@@ -22,8 +22,8 @@ class UsageTrackingService:
             return None
         details = raw.get('completion_tokens_details') if isinstance(raw.get('completion_tokens_details'),dict) else {}
         prompt_details = raw.get('prompt_tokens_details') if isinstance(raw.get('prompt_tokens_details'),dict) else {}
-        incoming=value('prompt_tokens','input_tokens','input_token_count')
-        outgoing=value('completion_tokens','output_tokens','output_token_count')
+        incoming=value('prompt_tokens','input_tokens','input_token_count','prompt_eval_count')
+        outgoing=value('completion_tokens','output_tokens','output_token_count','eval_count')
         reasoning = value('reasoning_tokens')
         if reasoning is None:
             reasoning = UsageTrackingService._positive(details.get('reasoning_tokens'))
@@ -40,13 +40,25 @@ class UsageTrackingService:
     @staticmethod
     def _positive(value: Any) -> int | None:
         return int(value) if isinstance(value,(int,float)) and not isinstance(value,bool) and value >= 0 else None
-    def record(self, *, usage: NormalizedTokenUsage, task_name: str | None, provider: str, model: str, streaming: bool, status: str, duration_ms: int | None, retry_count: int=0, http_status: int | None=None, error_code: str | None=None, provider_request_id: str | None=None, input_bytes: int=0, output_bytes: int=0) -> None:
+    @staticmethod
+    def normalize_input_only(raw: dict[str, Any] | None, *, estimated_input_bytes: int = 0) -> NormalizedTokenUsage:
+        """Normalize embedding/rerank usage, where every token is input usage."""
+        usage = UsageTrackingService.normalize(raw, estimated_input_bytes=estimated_input_bytes)
+        if usage.input_tokens is not None:
+            return usage
+        if usage.total_tokens is not None:
+            return NormalizedTokenUsage(
+                input_tokens=usage.total_tokens, output_tokens=0, total_tokens=usage.total_tokens, source=usage.source,
+            )
+        return usage
+
+    def record(self, *, usage: NormalizedTokenUsage, task_name: str | None, provider: str, model: str, streaming: bool, status: str, duration_ms: int | None, retry_count: int=0, http_status: int | None=None, error_code: str | None=None, provider_request_id: str | None=None, input_bytes: int=0, output_bytes: int=0, usage_metadata: dict[str, Any] | None=None) -> None:
         settings=get_settings()
         if not settings.admin_usage_tracking_enabled: return
         context=get_usage_request_context()
         trace=context.trace_id if context.trace_id and len(context.trace_id)==36 else None
         try:
-            UsageRepository().insert_event({'call_id':str(uuid4()),'trace_id':trace,'user_id':context.user_id,'email_snapshot':context.email,'business_session_id':context.business_session_id,'task_name':task_name,'provider':provider,'model':model,'is_streaming':streaming,'input_tokens':usage.input_tokens,'output_tokens':usage.output_tokens,'reasoning_tokens':usage.reasoning_tokens,'cached_tokens':usage.cached_tokens,'total_tokens':usage.total_tokens,'usage_source':usage.source,'status':status,'http_status':http_status,'duration_ms':duration_ms,'retry_count':retry_count,'provider_request_id':provider_request_id,'error_code':error_code,'usage_metadata':{}})
+            UsageRepository().insert_event({'call_id':str(uuid4()),'trace_id':trace,'user_id':context.user_id,'email_snapshot':context.email,'business_session_id':context.business_session_id,'task_name':task_name,'provider':provider,'model':model,'is_streaming':streaming,'input_tokens':usage.input_tokens,'output_tokens':usage.output_tokens,'reasoning_tokens':usage.reasoning_tokens,'cached_tokens':usage.cached_tokens,'total_tokens':usage.total_tokens,'usage_source':usage.source,'status':status,'http_status':http_status,'duration_ms':duration_ms,'retry_count':retry_count,'provider_request_id':provider_request_id,'error_code':error_code,'usage_metadata':usage_metadata or {}})
         except Exception:
             logger.warning('LLM usage event write failed', exc_info=False)
         else:

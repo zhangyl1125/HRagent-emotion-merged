@@ -44,7 +44,7 @@ def _shared_sync_http_client(settings: Settings) -> httpx.Client:
     global _SYNC_HTTP_CLIENT
     with _HTTP_CLIENT_LOCK:
         if _SYNC_HTTP_CLIENT is None:
-            _SYNC_HTTP_CLIENT = httpx.Client(timeout=settings.llm_timeout_seconds, limits=_http_limits())
+            _SYNC_HTTP_CLIENT = httpx.Client(timeout=settings.llm_timeout_seconds, limits=_http_limits(), trust_env=settings.llm_provider != "ollama")
         return _SYNC_HTTP_CLIENT
 
 
@@ -53,7 +53,7 @@ def _shared_async_http_client(settings: Settings) -> httpx.AsyncClient:
     with _HTTP_CLIENT_LOCK:
         client = _ASYNC_HTTP_CLIENTS.get(loop_key)
         if client is None:
-            client = httpx.AsyncClient(timeout=settings.llm_timeout_seconds, limits=_http_limits())
+            client = httpx.AsyncClient(timeout=settings.llm_timeout_seconds, limits=_http_limits(), trust_env=settings.llm_provider != "ollama")
             _ASYNC_HTTP_CLIENTS[loop_key] = client
         return client
 
@@ -127,7 +127,7 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         if not url:
             raise LLMError("Chat API endpoint is not configured.")
         payload = self._build_payload(messages, stop=stop)
-        headers = self._auth.sync_headers(self.settings.chat_api_key)
+        headers = {} if self.settings.llm_provider == "ollama" else self._auth.sync_headers(self.settings.chat_api_key)
         headers.setdefault("Content-Type", "application/json")
         last_error: Exception | None = None
         for attempt in range(self.settings.llm_max_retries + 1):
@@ -154,7 +154,7 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         if not url:
             raise LLMError("Chat API endpoint is not configured.")
         payload = self._build_payload(messages, stop=stop)
-        headers = await self._auth.async_headers(self.settings.chat_api_key)
+        headers = {} if self.settings.llm_provider == "ollama" else await self._auth.async_headers(self.settings.chat_api_key)
         headers.setdefault("Content-Type", "application/json")
         last_error: Exception | None = None
         for attempt in range(self.settings.llm_max_retries + 1):
@@ -196,11 +196,12 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         if not url:
             raise LLMError("Chat API endpoint is not configured.")
         payload = self._build_payload(messages, stop=stop, stream=True)
-        headers = await self._auth.async_headers(self.settings.chat_api_key)
+        headers = {} if self.settings.llm_provider == "ollama" else await self._auth.async_headers(self.settings.chat_api_key)
         headers.setdefault("Content-Type", "application/json")
         last_error: Exception | None = None
         input_bytes = len(json.dumps(payload.get("messages", []), ensure_ascii=False).encode("utf-8"))
         output_bytes = 0
+        provider_usage: dict[str, Any] | None = None
         completed = False
         try:
             for attempt in range(self.settings.llm_max_retries + 1):
@@ -210,7 +211,9 @@ class ModelFarmLangChainChatModel(BaseChatModel):
                         if resp.status_code >= 400:
                             body = (await resp.aread()).decode("utf-8", errors="replace")[:1000]
                             raise LLMError(f"Chat API HTTP {resp.status_code}: {body}")
-                        async for delta in self._iter_stream_deltas(resp):
+                        async for delta, chunk_usage in self._iter_stream_deltas(resp):
+                            if chunk_usage:
+                                provider_usage = chunk_usage
                             if delta:
                                 output_bytes += len(delta.encode("utf-8"))
                                 yield delta
@@ -223,7 +226,7 @@ class ModelFarmLangChainChatModel(BaseChatModel):
             raise LLMError(f"LangChain chat model streaming failed: {self._format_exception(last_error)}")
         finally:
             UsageTrackingService().record(
-                usage=UsageTrackingService.normalize(None, estimated_input_bytes=input_bytes, estimated_output_bytes=output_bytes),
+                usage=UsageTrackingService.normalize(provider_usage, estimated_input_bytes=input_bytes, estimated_output_bytes=output_bytes),
                 task_name=self.task_name, provider=self.settings.llm_provider,
                 model=self.settings.model_for_task(self.task_name, self.explicit_model), streaming=True,
                 status="success" if completed else "cancelled" if output_bytes else "error",
@@ -237,11 +240,12 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         if not url:
             raise LLMError("Chat API endpoint is not configured.")
         payload = self._build_payload(messages, stop=stop, stream=True)
-        headers = await self._auth.async_headers(self.settings.chat_api_key)
+        headers = {} if self.settings.llm_provider == "ollama" else await self._auth.async_headers(self.settings.chat_api_key)
         headers.setdefault("Content-Type", "application/json")
         last_error: Exception | None = None
         input_bytes = len(json.dumps(payload.get("messages", []), ensure_ascii=False).encode("utf-8"))
         output_bytes = 0; completed = False
+        provider_usage: dict[str, Any] | None = None
         try:
             for attempt in range(self.settings.llm_max_retries + 1):
                 try:
@@ -250,7 +254,9 @@ class ModelFarmLangChainChatModel(BaseChatModel):
                         if resp.status_code >= 400:
                             body = (await resp.aread()).decode("utf-8", errors="replace")[:1000]
                             raise LLMError(f"Chat API HTTP {resp.status_code}: {body}")
-                        async for channel, text in self._iter_stream_events(resp):
+                        async for channel, text, chunk_usage in self._iter_stream_events(resp):
+                            if chunk_usage:
+                                provider_usage = chunk_usage
                             if text:
                                 output_bytes += len(text.encode("utf-8"))
                                 yield channel, text
@@ -263,7 +269,7 @@ class ModelFarmLangChainChatModel(BaseChatModel):
             raise LLMError(f"LangChain chat model streaming failed: {self._format_exception(last_error)}")
         finally:
             UsageTrackingService().record(
-                usage=UsageTrackingService.normalize(None, estimated_input_bytes=input_bytes, estimated_output_bytes=output_bytes),
+                usage=UsageTrackingService.normalize(provider_usage, estimated_input_bytes=input_bytes, estimated_output_bytes=output_bytes),
                 task_name=self.task_name, provider=self.settings.llm_provider,
                 model=self.settings.model_for_task(self.task_name, self.explicit_model), streaming=True,
                 status="success" if completed else "cancelled" if output_bytes else "error",
@@ -271,7 +277,7 @@ class ModelFarmLangChainChatModel(BaseChatModel):
                 error_code=type(last_error).__name__ if last_error else None,
             )
 
-    async def _iter_stream_deltas(self, resp: httpx.Response) -> AsyncIterator[str]:
+    async def _iter_stream_deltas(self, resp: httpx.Response) -> AsyncIterator[tuple[str, dict[str, Any] | None]]:
         async for line in resp.aiter_lines():
             payload = self._stream_line_payload(line)
             if payload is None:
@@ -282,11 +288,9 @@ class ModelFarmLangChainChatModel(BaseChatModel):
                 data = json.loads(payload)
             except json.JSONDecodeError:
                 continue
-            delta = self._extract_stream_content_delta(data)
-            if delta:
-                yield delta
+            yield self._extract_stream_content_delta(data) or "", self._extract_usage(data)
 
-    async def _iter_stream_events(self, resp: httpx.Response) -> AsyncIterator[tuple[str, str]]:
+    async def _iter_stream_events(self, resp: httpx.Response) -> AsyncIterator[tuple[str, str, dict[str, Any] | None]]:
         async for line in resp.aiter_lines():
             payload = self._stream_line_payload(line)
             if payload is None:
@@ -297,12 +301,18 @@ class ModelFarmLangChainChatModel(BaseChatModel):
                 data = json.loads(payload)
             except json.JSONDecodeError:
                 continue
+            usage = self._extract_usage(data)
+            emitted = False
             reasoning = self._extract_stream_reasoning_delta(data)
             if reasoning:
-                yield "thinking", reasoning
+                emitted = True
+                yield "thinking", reasoning, usage
             delta = self._extract_stream_content_delta(data)
             if delta:
-                yield "content", delta
+                emitted = True
+                yield "content", delta, usage
+            if usage and not emitted:
+                yield "", "", usage
 
     @staticmethod
     def _stream_line_payload(line: str) -> str | None:
@@ -316,6 +326,32 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         return None
 
     def _build_payload(self, messages: list[BaseMessage], stop: list[str] | None = None, stream: bool = False) -> dict[str, Any]:
+        effective_max_tokens = self.max_tokens if self.max_tokens is not None else self.settings.max_tokens_for_task(self.task_name)
+        enable_thinking = self.enable_thinking if self.enable_thinking is not None else self.settings.llm_enable_thinking
+        if self.settings.llm_provider == "ollama":
+            options: dict[str, Any] = {
+                "temperature": self.temperature if self.temperature is not None else self.settings.temperature_for_task(self.task_name),
+            }
+            if self.settings.llm_top_p is not None:
+                options["top_p"] = self.settings.llm_top_p
+            if effective_max_tokens is not None:
+                options["num_predict"] = effective_max_tokens
+            if stop:
+                options["stop"] = stop[:4]
+            payload: dict[str, Any] = {
+                "model": self.settings.model_for_task(task_name=self.task_name, explicit_model=self.explicit_model),
+                "messages": self._normalize_messages(messages),
+                "stream": stream,
+                "options": options,
+            }
+            if enable_thinking is not None:
+                payload["think"] = enable_thinking
+            formatted = self._format_response_format(self.response_format)
+            if isinstance(formatted, dict) or formatted in {"json", "json_object"}:
+                payload["format"] = "json"
+            if self._bound_tools:
+                payload["tools"] = [self._normalize_tool(tool) for tool in self._bound_tools]
+            return payload
         payload: dict[str, Any] = {
             "model": self.settings.model_for_task(task_name=self.task_name, explicit_model=self.explicit_model),
             "messages": self._normalize_messages(messages),
@@ -324,8 +360,6 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         }
         if stop:
             payload["stop"] = stop[:4]
-        effective_max_tokens = self.max_tokens if self.max_tokens is not None else self.settings.max_tokens_for_task(self.task_name)
-        enable_thinking = self.enable_thinking if self.enable_thinking is not None else self.settings.llm_enable_thinking
         optional_values = {
             "top_p": self.settings.llm_top_p,
             "max_tokens": effective_max_tokens,
@@ -442,7 +476,17 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         usage = data.get("usage")
         if usage is None and isinstance(data.get("data"), dict):
             usage = data["data"].get("usage")
-        return usage if isinstance(usage, dict) else None
+        if isinstance(usage, dict):
+            return usage
+        for candidate in (data, data.get("data")):
+            if not isinstance(candidate, dict):
+                continue
+            if any(key in candidate for key in ("prompt_eval_count", "eval_count")):
+                return {
+                    "prompt_eval_count": candidate.get("prompt_eval_count"),
+                    "eval_count": candidate.get("eval_count"),
+                }
+        return None
 
     @classmethod
     def _extract_tool_calls(cls, data: Any) -> list[dict[str, Any]]:
@@ -468,6 +512,9 @@ class ModelFarmLangChainChatModel(BaseChatModel):
             for message in reversed(messages):
                 if isinstance(message, dict):
                     candidates.append(message.get("tool_calls"))
+        message = data.get("message")
+        if isinstance(message, dict):
+            candidates.append(message.get("tool_calls"))
         candidates.append(data.get("tool_calls"))
         for raw_calls in candidates:
             if not isinstance(raw_calls, list):
@@ -569,6 +616,11 @@ class ModelFarmLangChainChatModel(BaseChatModel):
         if isinstance(inner, list):
             parts = [part for item in inner if (part := cls._extract_stream_content_delta(item))]
             return "".join(parts) if parts else None
+        message = data.get("message")
+        if isinstance(message, dict):
+            for key in ("delta", "content", "text"):
+                if message.get(key) is not None:
+                    return cls._stringify_content(message.get(key))
         messages = data.get("messages")
         if isinstance(messages, list):
             for message in reversed(messages):

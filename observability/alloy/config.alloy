@@ -55,6 +55,16 @@ loki.source.docker "hragent" {
 loki.process "hragent" {
 	stage.decolorize { }
 
+	stage.match {
+		selector = "{service=\"backend\"}"
+
+		stage.multiline {
+			firstline     = "^\\d{4}-\\d{2}-\\d{2}[ T]"
+			max_wait_time = "2s"
+			max_lines     = 128
+		}
+	}
+
 	stage.regex {
 		expression = "(?i)(?:^|\\|[[:space:]]*)(?P<level>debug|info|warning|warn|error|critical|exception|fatal|log)(?:[[:space:]]*\\||:)"
 	}

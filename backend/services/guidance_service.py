@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
@@ -24,10 +23,11 @@ from backend.schemas.state import SessionState
 from backend.services.cache_service import CacheService, cache_digest
 from backend.services.retrieval_service import RetrievalService
 from backend.services.session_service import SessionService
+from backend.utils.logger import get_logger
 from backend.workflows.guidance_graph import GuidanceWorkflow
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _semantic_payload(value: Any) -> Any:

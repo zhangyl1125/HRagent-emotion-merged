@@ -617,6 +617,11 @@ class HRagentUser(HttpUser):
             if done_payload is None:
                 resp.failure(f"{name} ended without done event")
                 raise StopUser()
+            if done_payload.get("complete") is not True:
+                errors = done_payload.get("errors")
+                detail = json.dumps(errors, ensure_ascii=False) if errors else "unknown guidance error"
+                resp.failure(f"{name} incomplete: {detail[:500]}")
+                raise StopUser()
             resp.success()
             return done_payload
 
@@ -818,6 +823,33 @@ def reset_authorized_test_credentials(environment, **kwargs) -> None:
         )
         environment.process_exit_code = 2
         environment.runner.quit()
+        return
+
+    if not (auth_enabled and uses_fixed_credentials):
+        return
+
+    credentials = load_test_credentials_from_postgres()
+    with HRagentUser.credential_lock:
+        HRagentUser.credential_pool = credentials
+
+    requested_users = int(getattr(environment.runner, "target_user_count", 0) or 0)
+    if not credentials:
+        logging.error(
+            "Load test was not started: no enabled authorized fixed test accounts are available."
+        )
+        environment.process_exit_code = 2
+        environment.runner.quit()
+        return
+    if requested_users > len(credentials):
+        logging.error(
+            "Load test was not started: requested users=%s exceeds authorized fixed test accounts=%s. "
+            "Reduce Number of users to %s or authorize additional dedicated test accounts.",
+            requested_users,
+            len(credentials),
+            len(credentials),
+        )
+        environment.process_exit_code = 2
+        environment.runner.quit()
 
 
 # CI/CD 质量门禁 - 测试结束时自动执行
@@ -829,10 +861,11 @@ def on_quitting(environment, **kwargs) -> None:
     Locust 测试退出事件监听器 —— 实现 CI/CD 质量门禁。
 
     在测试完全结束后触发，根据统计汇总数据判断测试是否通过。
-    三个门禁指标（通过环境变量可配置）:
-        1. 失败率      > HRAGENT_MAX_FAIL_RATIO (默认 1%)    → 测试失败
-        2. 平均响应时间 > HRAGENT_MAX_AVG_MS     (默认 800ms) → 测试失败
-        3. P95 响应时间 > HRAGENT_MAX_P95_MS     (默认 2000ms)→ 测试失败
+    四个门禁条件:
+        1. 已有非零退出码                                      → 保留原失败结果
+        2. 请求总数为 0                                        → 测试失败
+        3. 失败率      > HRAGENT_MAX_FAIL_RATIO (默认 1%)       → 测试失败
+        4. 平均响应时间或 P95 超过配置阈值                      → 测试失败
 
     判断优先级: 失败率 > 平均响应时间 > P95
     即任一指标超标都判定为失败，且按上述顺序只报告第一个超标项。
@@ -847,6 +880,21 @@ def on_quitting(environment, **kwargs) -> None:
     """
     # 汇总统计数据（所有用户、所有接口的聚合值）
     stats = environment.stats.total
+
+    # test_start 等前置检查可能已经设置了失败退出码，例如缺少测试密码。
+    # quitting 不能再用空统计结果把该退出码覆盖为成功。
+    if environment.process_exit_code not in {None, 0}:
+        logging.error(
+            "Load test failed before quality-gate evaluation: exit_code=%s",
+            environment.process_exit_code,
+        )
+        return
+
+    # 未执行任何请求不代表压测通过，常见原因是 Web UI 尚未开始测试或用户中断。
+    if stats.num_requests <= 0:
+        logging.error("Load test failed: no requests were executed")
+        environment.process_exit_code = 1
+        return
 
     # 读取门禁阈值（支持环境变量动态配置）
     max_fail_ratio = env_float("HRAGENT_MAX_FAIL_RATIO", 0.01)   # 默认最大 1% 失败率
