@@ -1,0 +1,4 @@
+interface:
+  display_name: "HRagent Token 与并发优化"
+  short_description: "按阶段降低 HRagent Token 消耗并完成高并发验收"
+  default_prompt: "Use $hragent-token-concurrency to execute the next approved token and concurrency optimization stage with its acceptance gates."

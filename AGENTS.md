@@ -17,8 +17,22 @@ DO NOT send optional commentary
 | `fastapi-pydantic-settings` | [.claude/skills/fastapi-pydantic-settings.md](.claude/skills/fastapi-pydantic-settings.md) | FastAPI 配置管理模式（通用跨项目模板） |
 | `locust-loadtest` | [.claude/skills/locust-loadtest.md](.claude/skills/locust-loadtest.md) | Locust 压测框架（冒烟测试+并发压测） |
 | `hragent-api-pattern` | [.claude/skills/hragent-api-pattern.md](.claude/skills/hragent-api-pattern.md) | API 服务开发模式（新增接口/业务域的开发规范） |
+| `hragent-token-concurrency` | [.agents/skills/hragent-token-concurrency/SKILL.md](.agents/skills/hragent-token-concurrency/SKILL.md) | 外部模型 API 的 Token 降耗、并发治理与分阶段验收 |
 
 另有业务域 Skill：[HRagent-05_standard_SKILL.md](HRagent-05_standard_SKILL.md)（OCEAN + MVPI 动态情绪预演完整规范）。
+
+
+## Token 降耗与高并发专项
+
+涉及 Prompt、LLM 调用次数、对话上下文、模型并发、外部 API 限流、singleflight、重试、Token 监控或 Locust 完整流程压测时，必须使用 `hragent-token-concurrency` Skill，并遵守以下规则：
+
+1. 以 `specs/token-concurrency-optimization/README.md` 的状态表为唯一阶段入口，严格按 `01` 到 `07` 顺序实施。
+2. 一次只实施用户明确授权的一个阶段；当前阶段验收未通过时，不得进入下一阶段或标记完成。
+3. 本专项仅使用 `main` 基线支持的外部模型 API；不得合并或移植 `ollama` 分支，不得操作 Ollama、GPU 或模型卷。
+4. 完整 15 轮流程的输入 Token 目标为相对阶段 01 基线至少降低 50%；50 用户验收要求至少 49 条完整流程结束且总失败率低于 1%。
+5. 保持成功响应、SSE 事件顺序、业务 Schema 和六步流程兼容；不得缓存完整 AI 员工回复。
+6. 阶段执行不得记录 Prompt、完整模型回复、员工正文或真实凭据；测试只能使用隔离的合成资料和专用账号。
+7. 模型、服务地址、数据库迁移、鉴权、公开输出结构、Docker 或外部基础设施变更仍按高风险操作重新确认。
 
 
 ## 项目说明
