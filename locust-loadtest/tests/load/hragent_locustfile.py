@@ -27,7 +27,7 @@ HRagent-05 Locust load test file.
   --json-file PATH    测试结束后写入 JSON 摘要
 
 环境变量说明 (Environment variables):
-  HRAGENT_EMAIL                     登录邮箱，默认: aah5sgh@bosch.com
+  HRAGENT_EMAIL                     非固定账号模式的测试邮箱，必须通过环境变量注入
   HRAGENT_PASSWORD                  登录密码，当认证启用时必须提供
   HRAGENT_REGISTER_IF_MISSING       用户不存在时是否自动注册，默认: false
   HRAGENT_DISPLAY_NAME              注册时的昵称，默认: Locust User
@@ -38,6 +38,8 @@ HRagent-05 Locust load test file.
   HRAGENT_FLOW_MODE                  basic 或 full；full 时 1 用户只跑一次完整流程
   HRAGENT_FULL_FLOW_MESSAGE_COUNT    full 模式每位用户预演轮数，固定默认: 15
   HRAGENT_REPORT_TIMEOUT_SECONDS     复盘 SSE 的单次空闲读取超时(秒)，默认: 600
+  HRAGENT_BASELINE_LABEL            非敏感基线标签，仅允许字母、数字、点、下划线和连字符
+  HRAGENT_MIN_REQUESTS              质量门禁-最小请求数，默认: 1
   HRAGENT_MAX_FAIL_RATIO            质量门禁-最大失败率，默认: 0.01 (1%)
   HRAGENT_MAX_AVG_MS                质量门禁-最大平均响应时间(ms)，默认: 800
   HRAGENT_MAX_P95_MS                质量门禁-最大P95响应时间(ms)，默认: 2000
@@ -63,6 +65,14 @@ from typing import Any
 # StopUser: 异常类，抛出后立即终止当前虚拟用户
 from locust import HttpUser, between, events, task
 from locust.exception import StopUser
+
+from stage01_quality_gates import (
+    FULL_FLOW_METRICS,
+    guidance_done_error,
+    quality_gate_errors,
+    report_done_error,
+    validate_baseline_label,
+)
 
 
 # 工具函数 - 环境变量解析
@@ -246,7 +256,7 @@ class HRagentUser(HttpUser):
         # ---- 读取配置 ----
         self.auth_enabled = env_bool("HRAGENT_AUTH_ENABLED", True)
         self.verify_tls = env_bool("HRAGENT_VERIFY_TLS", True)
-        self.email = os.getenv("HRAGENT_EMAIL", "aah5sgh@bosch.com").strip().lower()
+        self.email = os.getenv("HRAGENT_EMAIL", "locust@example.invalid").strip().lower()
         self.password = os.getenv("HRAGENT_PASSWORD", "")
         self.display_name = os.getenv("HRAGENT_DISPLAY_NAME", "Locust User")
         self.auth_cookie_name = os.getenv("HRAGENT_AUTH_COOKIE_NAME", "hragent_session")
@@ -487,6 +497,7 @@ class HRagentUser(HttpUser):
         if self.full_flow_done:
             return
         self.full_flow_done = True
+        FULL_FLOW_METRICS.increment("started")
         try:
             session = self._post_json("/api/v1/sessions", {}, "POST /api/v1/sessions")
             session_id = str(session.get("session_id") or "")
@@ -529,6 +540,7 @@ class HRagentUser(HttpUser):
             )
             self._post_json(f"/api/v1/setup/{session_id}/complete", {}, "POST /api/v1/setup/[session]/complete")
             self._post_guidance_stream(session_id)
+            FULL_FLOW_METRICS.increment("guidance_completed")
             messages = self._load_test_messages()
             message_count = env_int("HRAGENT_FULL_FLOW_MESSAGE_COUNT", 15)
             if message_count != 15:
@@ -547,7 +559,12 @@ class HRagentUser(HttpUser):
                 )
             self._post_json(f"/api/v1/rehearsal/{session_id}/end", {}, "POST /api/v1/rehearsal/[session]/end")
             self._post_coach_report_stream(session_id)
+            FULL_FLOW_METRICS.increment("report_completed")
             self._get_json(f"/api/v1/sessions/{session_id}", "GET /api/v1/sessions/[session]")
+            FULL_FLOW_METRICS.increment("completed")
+        except Exception:
+            FULL_FLOW_METRICS.increment("failed")
+            raise
         finally:
             self._logout_once()
             runner = getattr(self.environment, "runner", None)
@@ -614,8 +631,9 @@ class HRagentUser(HttpUser):
                     done_payload = payload if isinstance(payload, dict) else {"data": payload}
                     break
 
-            if done_payload is None:
-                resp.failure(f"{name} ended without done event")
+            validation_error = guidance_done_error(done_payload)
+            if validation_error:
+                resp.failure(f"{name} {validation_error}")
                 raise StopUser()
             resp.success()
             return done_payload
@@ -659,8 +677,9 @@ class HRagentUser(HttpUser):
                     done_payload = payload if isinstance(payload, dict) else {"data": payload}
                     break
 
-            if done_payload is None:
-                resp.failure(f"{name} ended without done event")
+            validation_error = report_done_error(done_payload)
+            if validation_error:
+                resp.failure(f"{name} {validation_error}")
                 raise StopUser()
 
             # stream=True otherwise measures only time to the SSE response headers.
@@ -807,6 +826,14 @@ def reset_authorized_test_credentials(environment, **kwargs) -> None:
     with HRagentUser.credential_lock:
         HRagentUser.credential_pool = None
         HRagentUser.credential_index = count()
+    FULL_FLOW_METRICS.reset()
+
+    label_error = validate_baseline_label(os.getenv("HRAGENT_BASELINE_LABEL", "").strip())
+    if label_error:
+        logging.error("Load test was not started: %s", label_error)
+        environment.process_exit_code = 2
+        environment.runner.quit()
+        return
 
     uses_fixed_credentials = env_bool("HRAGENT_USE_TEST_CREDENTIAL_TABLE", True)
     auth_enabled = env_bool("HRAGENT_AUTH_ENABLED", True)
@@ -829,13 +856,14 @@ def on_quitting(environment, **kwargs) -> None:
     Locust 测试退出事件监听器 —— 实现 CI/CD 质量门禁。
 
     在测试完全结束后触发，根据统计汇总数据判断测试是否通过。
-    三个门禁指标（通过环境变量可配置）:
-        1. 失败率      > HRAGENT_MAX_FAIL_RATIO (默认 1%)    → 测试失败
-        2. 平均响应时间 > HRAGENT_MAX_AVG_MS     (默认 800ms) → 测试失败
-        3. P95 响应时间 > HRAGENT_MAX_P95_MS     (默认 2000ms)→ 测试失败
+    门禁指标（通过环境变量可配置）:
+        1. 请求数      < HRAGENT_MIN_REQUESTS (默认 1)       → 测试失败
+        2. 失败率      > HRAGENT_MAX_FAIL_RATIO (默认 1%)    → 测试失败
+        3. 平均响应时间 > HRAGENT_MAX_AVG_MS     (默认 800ms) → 测试失败
+        4. P95 响应时间 > HRAGENT_MAX_P95_MS     (默认 2000ms)→ 测试失败
+        5. full 模式的 Guidance、Report 或完整流程未完成      → 测试失败
 
-    判断优先级: 失败率 > 平均响应时间 > P95
-    即任一指标超标都判定为失败，且按上述顺序只报告第一个超标项。
+    所有失败原因都会记录；已有非零启动退出码不会被退出门禁覆盖。
 
     CI/CD 集成:
         测试通过 → process_exit_code = 0 → CI pipeline 继续
@@ -845,30 +873,41 @@ def on_quitting(environment, **kwargs) -> None:
         environment: Locust 运行环境对象，包含 stats (统计数据)、runner 等信息
         **kwargs:    事件系统传入的额外参数（此处未使用）
     """
-    # 汇总统计数据（所有用户、所有接口的聚合值）
+    existing_exit_code = int(getattr(environment, "process_exit_code", 0) or 0)
+    if existing_exit_code:
+        logging.error("Load test retained earlier non-zero exit code: %s", existing_exit_code)
+        return
+
     stats = environment.stats.total
+    min_requests = max(1, env_int("HRAGENT_MIN_REQUESTS", 1))
+    max_fail_ratio = env_float("HRAGENT_MAX_FAIL_RATIO", 0.01)
+    max_avg_ms = env_float("HRAGENT_MAX_AVG_MS", 800.0)
+    max_p95_ms = env_float("HRAGENT_MAX_P95_MS", 2000.0)
 
-    # 读取门禁阈值（支持环境变量动态配置）
-    max_fail_ratio = env_float("HRAGENT_MAX_FAIL_RATIO", 0.01)   # 默认最大 1% 失败率
-    max_avg_ms = env_float("HRAGENT_MAX_AVG_MS", 800.0)          # 默认最大 800ms 平均响应
-    max_p95_ms = env_float("HRAGENT_MAX_P95_MS", 2000.0)         # 默认最大 2000ms P95
+    p95 = stats.get_response_time_percentile(0.95) or 0
+    errors = quality_gate_errors(
+        num_requests=stats.num_requests or 0,
+        fail_ratio=stats.fail_ratio or 0,
+        avg_response_time=stats.avg_response_time or 0,
+        p95_response_time=p95,
+        min_requests=min_requests,
+        max_fail_ratio=max_fail_ratio,
+        max_avg_ms=max_avg_ms,
+        max_p95_ms=max_p95_ms,
+        flow_mode=os.getenv("HRAGENT_FLOW_MODE", "full").strip().lower(),
+        full_flow=FULL_FLOW_METRICS.snapshot(),
+    )
+    if errors:
+        for error in errors:
+            logging.error("Load test failed: %s", error)
+        environment.process_exit_code = 1
+        return
 
-    # 计算实际统计值
-    p95 = stats.get_response_time_percentile(0.95) or 0   # 95 分位响应时间
-    avg = stats.avg_response_time or 0                     # 平均响应时间
-    fail_ratio = stats.fail_ratio or 0                     # 请求失败率
-
-    # 逐项判断，任一超标即退出码置 1
-    if fail_ratio > max_fail_ratio:
-        logging.error("Load test failed: fail_ratio %.4f > %.4f", fail_ratio, max_fail_ratio)
-        environment.process_exit_code = 1
-    elif avg > max_avg_ms:
-        logging.error("Load test failed: avg_response_time %.2f ms > %.2f ms", avg, max_avg_ms)
-        environment.process_exit_code = 1
-    elif p95 > max_p95_ms:
-        logging.error("Load test failed: p95 %.2f ms > %.2f ms", p95, max_p95_ms)
-        environment.process_exit_code = 1
-    else:
-        # 所有指标均达标，测试通过
-        logging.info("Load test passed: fail_ratio=%.4f avg=%.2fms p95=%.2fms", fail_ratio, avg, p95)
-        environment.process_exit_code = 0
+    logging.info(
+        "Load test passed: requests=%s fail_ratio=%.4f avg=%.2fms p95=%.2fms",
+        stats.num_requests or 0,
+        stats.fail_ratio or 0,
+        stats.avg_response_time or 0,
+        p95,
+    )
+    environment.process_exit_code = 0

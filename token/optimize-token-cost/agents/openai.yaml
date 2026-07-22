@@ -1,0 +1,4 @@
+interface:
+  display_name: "工程 Token 成本优化"
+  short_description: "审计并安全降低工程项目的模型 Token 用量与调用费用"
+  default_prompt: "使用 $optimize-token-cost 审计此工程项目，并制定有基线、质量门禁和回滚方案的 Token 成本优化计划。"

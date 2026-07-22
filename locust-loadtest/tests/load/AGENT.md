@@ -2,8 +2,12 @@
 DO NOT send optional commentary
 
 启动命令按照一下进行启动，不需要修改：
-export HRAGENT_EMAIL="aah5sgh@bosch.com"
-export HRAGENT_PASSWORD="123456789123456789"
+# Inject the test account from the shell or a secret manager.
+: "${HRAGENT_EMAIL:?Set HRAGENT_EMAIL before running Locust}"
+export HRAGENT_EMAIL
+# Inject this value from the shell or a secret manager; never store it here.
+: "${HRAGENT_PASSWORD:?Set HRAGENT_PASSWORD before running Locust}"
+export HRAGENT_PASSWORD
 export HRAGENT_AUTH_ENABLED=true
 
 locust -f locust-loadtest/tests/load/hragent_locustfile.py \
