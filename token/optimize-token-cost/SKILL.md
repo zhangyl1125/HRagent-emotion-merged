@@ -1,79 +1,51 @@
 ---
 name: optimize-token-cost
-description: 审计并安全降低 LLM、RAG、Agent、多轮对话和多模态工程项目的 Token 用量与模型费用。用于定位调用和上下文热点，精简 Prompt 与工具定义，设计滑动窗口、滚动记忆和按需加载，优化 RAG、Prompt Cache、结果缓存、调用合并、Singleflight、重试、并发、模型路由和费用归因，并验证降费不会破坏质量、安全、Schema、流式协议或用户流程。
+description: 审计并安全降低 LLM、RAG、Agent、多轮对话和多模态工程项目的 Token 用量及模型费用。当任务涉及 Prompt 或上下文压缩、调用合并、缓存、模型路由、并发重试、用量归因、优化前后对比或降费质量门禁时使用。
 ---
 
 # Token 成本优化
 
-以完整业务结果为单位，通过可测量、可回滚的改动降低模型费用，同时保持质量、安全和公开契约稳定。
+以完整业务结果为单位降低模型费用，同时保持质量、安全、Schema、流式协议和用户流程稳定。
 
-## 执行流程
+## 核心流程
 
-### 1. 确认边界
+1. **确认边界**：读取仓库指令与调用架构，列出受保护契约、隐私限制和需单独授权的变更。
+2. **建立基线**：使用固定合成流程记录调用、Token、费用、延迟、失败、重试和质量；拒绝零样本通过。
+3. **定位热点**：从 Prompt、Context、Harness 三层查找重复输入、无效上下文和重复工作。
+4. **选择方案**：按可验证收益、质量风险、可回滚性和实施成本排序；一次只修改一个维度。
+5. **验证结果**：用相同流程比较完整业务结果，检查费用、性能、Schema、安全、证据和流式行为。
+6. **渐进发布**：从离线或小流量开始，保留旧路径；触发停止条件时回滚并报告未验证项。
 
-- 读取仓库指令、架构、调用入口、配置和测试约束。
-- 列出受保护契约：Schema、流式事件、错误语义、安全规则、证据、隐私、延迟和质量目标。
-- 识别需要单独授权的模型、Provider、微调、部署、数据库和基础设施变更。
-- 只使用合成数据和环境变量凭据，不记录 Prompt、完整输出、个人数据或鉴权信息。
+## 资料路由
 
-### 2. 还原调用链
+只读取当前任务需要的资料，不要一次加载全部 `references/`。
 
-- 追踪完整业务流程中的 LLM、Embedding、Rerank、语音、图像、工具调用和重试。
-- 确认运行时 Provider、模型、参数、缓存、流式和降级路径。
-- 定位重复指令、完整历史、重复检索、冗长工具定义和并发重复工作。
-- 以代码与 Provider 用量响应为准，不依据配置名称推断实际行为。
+| 当前任务 | 按需读取 |
+| --- | --- |
+| 快速选择优化模式与实施顺序 | [references/playbook.md](references/playbook.md) |
+| 建立调用、Token、费用和延迟基线 | [references/measurement-baseline.md](references/measurement-baseline.md) |
+| 精简 Prompt、工具定义或多轮上下文 | [references/prompt-context.md](references/prompt-context.md) |
+| 设计 RAG、缓存、路由、批处理、并发或重试 | [references/cache-routing-concurrency.md](references/cache-routing-concurrency.md) |
+| 定义质量门禁、发布、回滚和报告 | [references/validation-rollout.md](references/validation-rollout.md) |
+| 运行用量聚合、基线对比或载荷审计工具 | [references/tools.md](references/tools.md) |
 
-### 3. 建立基线
+## 工具路由
 
-- 固定合成输入、测试身份、模型版本、价格版本、时间窗和完整流程。
-- 记录调用数、Token、其他计费单位、费用、延迟、重试、状态和质量结果。
-- 区分 Provider 返回、Tokenizer 估算和不可用数据。
-- 设置非零请求数、完整流程数和失败率门禁；无同口径基线时不得宣称节省。
+优先直接执行脚本；只有修改或排查脚本时才读取源码。
 
-### 4. 选择优化层
+| 目标 | 工具 |
+| --- | --- |
+| 聚合脱敏用量并计算版本化费用 | `scripts/aggregate_usage.py` |
+| 对比基线与候选结果并执行门禁 | `scripts/compare_runs.py` |
+| 检查合成 JSON 载荷的重复和大小 | `scripts/audit_payload.py` |
 
-按证据、预期收益、质量风险、可回滚性和实施成本排序：
-
-1. **Prompt**：规则去重、Few-shot 压缩、结构化输出、输出预算、稳定前缀。
-2. **Context**：滑动窗口、滚动记忆、工具和资料按需加载、RAG 上下文预算。
-3. **Harness**：调用合并、缓存、Singleflight、幂等、有限重试，以及经过授权的路由或级联。
-
-并发、批处理和流式主要改善吞吐或感知延迟；只有减少重复调用、重试或重复上下文时才算 Token 优化。
-
-### 5. 实施单变量改动
-
-- 一次只改变一个优化维度，优先处理有基线证据且风险最低的热点。
-- 保持成功响应、Schema、流式顺序、错误语义和安全行为。
-- 为编排、上下文、缓存和路由改动设置开关及回滚路径。
-- 为 Prompt、输出 Schema 和知识库设置版本，并纳入相关缓存键。
-- 未证明租户、用户和会话隔离前，不缓存个性化自由文本。
-
-### 6. 验证与发布
-
-- 用相同合成流程比较调用、Token、费用、延迟、重试、失败和质量。
-- 检查 Schema、关键事实、引用、安全规则、个性化和流式顺序。
-- 从离线回放、影子对比或小流量开始，保留旧路径。
-- 触发质量、安全、费用或稳定性门禁时停止并回滚。
-
-### 7. 报告结果
-
-- 给出范围、授权边界、基线口径和数据质量。
-- 给出热点证据、选定方案、拒绝方案和原因。
-- 给出修改文件、开关、回滚路径和验证结果。
-- 明确未验证项、残余风险、阻塞项和下一步。
-
-## 按需读取参考资料
-
-- 需要快速选择优化手段时，读取 [references/playbook.md](references/playbook.md)。
-- 需要建立计量、费用和热点基线时，读取 [references/measurement-baseline.md](references/measurement-baseline.md)。
-- 需要精简 Prompt、工具定义或对话上下文时，读取 [references/prompt-context.md](references/prompt-context.md)。
-- 需要设计 RAG、缓存、路由、批处理、并发或重试时，读取 [references/cache-routing-concurrency.md](references/cache-routing-concurrency.md)。
-- 需要制定质量门禁、发布、回滚和报告时，读取 [references/validation-rollout.md](references/validation-rollout.md)。
+运行工具前读取 [references/tools.md](references/tools.md)，遵守输入 Schema、退出码和隐私限制。
 
 ## 强制规则
 
-- 不写死厂商价格、模型能力、Tokenizer 比例或节省百分比，以目标环境实测为准。
-- Prompt Cache 可能降低计费和延迟，但不等于减少发送的逻辑 Token。
-- 本地部署不是零成本，必须比较硬件、能耗、容量、运维和质量后的总拥有成本。
-- 分布式协调故障后不得退化为无限并发或无限重试。
-- 若节省依赖删除必要信息、隐性增加修复调用或突破质量门禁，拒绝该方案。
+- 没有同口径、非零基线时，不宣称 Token 或费用降低。
+- 只使用合成、脱敏或聚合数据，不记录 Prompt、完整输出、个人数据或凭据。
+- 保持成功响应、Schema、流式顺序、错误语义、安全规则和证据链。
+- 模型、Provider、微调、部署、数据库或基础设施变更必须单独授权。
+- 并发、批处理和流式不天然降低 Token；Prompt Cache 命中也不等于逻辑输入消失。
+- 若质量、安全、隔离、费用或稳定性门禁失败，停止实施并回滚。
